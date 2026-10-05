@@ -39,8 +39,20 @@
   .press{margin-top:58px;color:var(--hi);animation:blink 1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
   .game{display:grid;grid-template-rows:34% 66%;gap:10px;height:100%;min-height:0}
-  .mapwrap{display:grid;place-items:center;border-bottom:1px solid rgba(100,180,110,.2);padding:4px 0 10px;min-height:0;overflow:hidden}
+  .mapwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid rgba(100,180,110,.2);padding:4px 0 8px;min-height:0;overflow:hidden;gap:6px}
   #map{margin:0;white-space:pre;color:var(--hi);font-size:clamp(11px,1.35vw,16px);line-height:1.00}
+  .exitbar{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+  .exitbar.hidden{display:none!important}
+  .exitbar-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+  .exitbar-row.exitbar-vertical{margin-top:2px}
+  .exitbtn{
+    font:inherit;font-size:.72rem;letter-spacing:.04em;color:var(--hi);
+    background:rgba(20,50,24,.85);border:1px solid rgba(100,180,110,.35);
+    border-radius:4px;padding:3px 8px;cursor:pointer;line-height:1.2
+  }
+  .exitbtn:hover{border-color:var(--fg);color:var(--hi)}
+  .exitbtn:focus{outline:1px solid var(--dim);outline-offset:2px}
+  .exitbtn-vertical{color:var(--hi);border-color:rgba(140,220,150,.45)}
   .console{min-height:0;display:flex;flex-direction:column}
   #onboarding{
     color:var(--dim);font-size:.78rem;line-height:1.45;margin-bottom:10px;

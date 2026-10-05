@@ -4,7 +4,13 @@ A tiny browser adventure inspired loosely by early text adventures and *Hunt the
 
 **Tone:** mysterious, sparse, eerie, curious, occasionally absurd, dryly funny.
 
-**Status:** early prototype — Playtest 1 preparation (migration from single-file HTML to a small maintainable layout).
+**Status:** early prototype — Playtest 1 (live on Vercel from `main`).
+
+## Controls
+
+- **Arrow keys:** move **W / N / E / S** when that exit exists.
+- **↑ UP / ↓ DOWN** buttons appear under the map when vertical exits exist; **Page Up / Page Down** work too.
+- **Type commands** at the prompt (`LOOK`, `TAKE`, `HELP`, etc.).
 
 ## Run locally
 

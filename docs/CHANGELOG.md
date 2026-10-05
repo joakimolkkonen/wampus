@@ -14,4 +14,12 @@ Earlier numbered versions are not present in this repository.
 - Added project docs: `README.md`, `docs/WORLD_BIBLE.md`, `docs/STATE.md`.
 - **Fix:** Board room accepts natural marble phrasing (`PUT MARBLE IN CUP`, `PUT MARBLE IN HOLE`, `PLACE …`, `USE MARBLE WITH BOARD`, plus common articles/clay variants).
 - **Fix:** Prototype ending message after pressing the black button (current content boundary).
-- Prepared for GitHub + static Vercel deploy (pending local review and git commit in environment).
+- Published to GitHub (`main`); Vercel deploy from `main`.
+
+## Playtest 1 polish — external playtest build
+
+- **Navigation:** on-screen **↑ UP / ↓ DOWN** (and cardinal) exit buttons; context line uses readable labels; Page Up/Down for vertical moves; arrows only fire when that cardinal exit exists.
+- **Maps:** ASCII room diagrams label exits (N/E/S/W, UP, DOWN); board room shows open hatch path.
+- **Interactions:** `PRESS BUTTON` works when the button is on the floor after opening the bag (no TAKE required); `LOOK BUTTON` when reachable.
+- **Deaths added:** climb tree (`beyond`); step into mirror (`mirrorroom`); lie down in rain (`rainroom`). Well jump unchanged.
+- **Docs:** `STATE.md`, `CHANGELOG.md`, README controls section.

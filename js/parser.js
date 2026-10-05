@@ -103,6 +103,20 @@ function handle(raw){
     return;
   }
 
+  if(state.room==="rainroom" && ["LIE IN RAIN","LIE DOWN IN RAIN","LIE ON THE RAIN"].includes(input)){
+    die([
+      "YOU LIE DOWN IN THE RAIN.",
+      "",
+      "IT PASSES THROUGH THE STONE.",
+      "",
+      "IT PASSES THROUGH YOU.",
+      "",
+      "AFTER A WHILE,",
+      "YOU STOP PASSING BACK."
+    ].join("\n"));
+    return;
+  }
+
   if(state.room==="rainroom" && ["DRINK RAIN","TASTE RAIN"].includes(input)){
     state.rainDrank=true;
     message([
@@ -187,6 +201,17 @@ function handle(raw){
       "",
       "        ding"
     ]);
+    return;
+  }
+
+  if(state.room==="mirrorroom" && ["ENTER MIRROR","WALK INTO MIRROR","STEP INTO MIRROR","GO INTO MIRROR","STEP THROUGH MIRROR"].includes(input)){
+    die([
+      "YOU STEP INTO THE MIRROR.",
+      "",
+      "THE GLASS DOES NOT BREAK.",
+      "",
+      "YOU DO."
+    ].join("\n"));
     return;
   }
 
@@ -395,15 +420,30 @@ function handle(raw){
     return;
   }
 
+  if(["LOOK BUTTON","LOOK BLACK BUTTON","EXAMINE BUTTON"].includes(input)){
+    if(!buttonReachable()){message(["YOU CANNOT SEE A BUTTON HERE."]);return}
+    message([
+      "A SINGLE BLACK BUTTON.",
+      "",
+      "NOT FROM CLOTHING.",
+      "",
+      "THE SORT YOU PRESS."
+    ]);
+    return;
+  }
+
   if(["PRESS BUTTON","PUSH BUTTON","USE BUTTON"].includes(input)){
-    if(!has("BLACK BUTTON")){message(["YOU DON'T HAVE A BUTTON."]);return}
+    if(!buttonReachable()){message(["YOU DON'T HAVE A BUTTON."]);return}
     if(state.atPrototypeEnd){
       message(prototypeEndingLines());
       return;
     }
     state.atPrototypeEnd=true;
+    const pressLead=has("BLACK BUTTON")
+      ? "YOU PRESS THE BUTTON."
+      : "YOU PRESS THE BUTTON WHERE IT LIES.";
     message([
-      "YOU PRESS THE BUTTON.",
+      pressLead,
       "",
       "        click",
       "",
@@ -458,7 +498,9 @@ function handle(raw){
 
   if(input==="HELP"){
     message([
-      "ARROW KEYS MOVE.",
+      "ARROW KEYS: ←W · ↑N · →E · ↓S",
+      "WHEN SHOWN: ↑ UP · ↓ DOWN (OR PGUP/PGDOWN)",
+      "",
       "TYPE SIMPLE COMMANDS.",
       "",
       "LOOK · TAKE · DROP · USE",
@@ -1147,6 +1189,17 @@ function handle(raw){
       "",
       "ALSO, THE CREATURE IS NOT HERE."
     ]);
+    return;
+  }
+
+  if(state.room==="beyond" && ["CLIMB TREE","CLIMB UP TREE","CLIMB THE TREE"].includes(input)){
+    die([
+      "YOU CLIMB THE TREE.",
+      "",
+      "THE TRUNK HAS NO END.",
+      "",
+      "YOUR ARMS DO."
+    ].join("\n"));
     return;
   }
 

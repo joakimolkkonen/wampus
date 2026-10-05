@@ -7,6 +7,7 @@ const logEl=document.getElementById("log");
 const cmd=document.getElementById("cmd");
 const inventoryEl=document.getElementById("inventory");
 const onboardingEl=document.getElementById("onboarding");
+const exitBarEl=document.getElementById("exitbar");
 
 function freshState(){
   return {
@@ -47,6 +48,83 @@ function prototypeEndingLines(){
   ];
 }
 
+function getAvailableExits(){
+  const r=ROOMS[state.room];
+  const ex={};
+  if(r.exits.N) ex.N=true;
+  if(r.exits.S) ex.S=true;
+  if(r.exits.E) ex.E=true;
+  if(r.exits.W) ex.W=true;
+  if(r.exits.U) ex.U=true;
+  if(r.exits.D) ex.D=true;
+  if(state.room==="hookroom" && state.secretOpen) ex.E=true;
+  if(state.room==="boardroom" && state.hatchOpen) ex.D=true;
+  return ex;
+}
+
+function buttonReachable(){
+  if(has("BLACK BUTTON")) return true;
+  return state.room==="belowroom" && droppedHere().includes("BLACK BUTTON");
+}
+
+function updateExitBar(){
+  if(!exitBarEl || state.dead){
+    if(exitBarEl) exitBarEl.classList.add("hidden");
+    return;
+  }
+  const ex=getAvailableExits();
+  const cardinal=[
+    {dir:"W",label:"← W"},
+    {dir:"N",label:"↑ N"},
+    {dir:"E",label:"→ E"},
+    {dir:"S",label:"↓ S"}
+  ];
+  const vertical=[];
+  if(ex.U) vertical.push({dir:"U",label:"↑ UP"});
+  if(ex.D) vertical.push({dir:"D",label:"↓ DOWN"});
+
+  exitBarEl.replaceChildren();
+  const cardRow=document.createElement("div");
+  cardRow.className="exitbar-row";
+  let anyCard=false;
+  for(const c of cardinal){
+    if(!ex[c.dir]) continue;
+    anyCard=true;
+    const btn=document.createElement("button");
+    btn.type="button";
+    btn.className="exitbtn";
+    btn.textContent=c.label;
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      cmd.value="";
+      move(c.dir);
+    });
+    cardRow.appendChild(btn);
+  }
+  if(anyCard) exitBarEl.appendChild(cardRow);
+
+  if(vertical.length){
+    const vRow=document.createElement("div");
+    vRow.className="exitbar-row exitbar-vertical";
+    for(const v of vertical){
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="exitbtn exitbtn-vertical";
+      btn.textContent=v.label;
+      btn.addEventListener("click",e=>{
+        e.stopPropagation();
+        cmd.value="";
+        move(v.dir);
+      });
+      vRow.appendChild(btn);
+    }
+    exitBarEl.appendChild(vRow);
+  }
+
+  if(exitBarEl.childNodes.length) exitBarEl.classList.remove("hidden");
+  else exitBarEl.classList.add("hidden");
+}
+
 function isBoardMarbleCommand(input){
   const known=[
     "PUT MARBLE IN BOARD","PUT MARBLE IN CUP","PLACE MARBLE IN CUP",
@@ -65,6 +143,8 @@ function roomArt(id){
     base=[...(state.boxOpened ? ROOMS.box.artOpen : ROOMS.box.artClosed)];
   } else if(id==="hookroom"){
     base=[...(state.secretOpen ? ROOMS.hookroom.artOpen : ROOMS.hookroom.artClosed)];
+  } else if(id==="boardroom"){
+    base=[...(state.hatchOpen ? ROOMS.boardroom.artHatch : ROOMS.boardroom.art)];
   } else if(id==="creature"){
     if(state.creaturePhase==="marbleTaken"){
       base=[...ROOMS.creature.artEmpty];
@@ -174,18 +254,16 @@ function contextText(){
     belowroom:"UNDER THE BOARD"
   };
 
-  const exits=[];
-  const r=ROOMS[state.room];
-  if(r.exits.N) exits.push("N");
-  if(r.exits.S) exits.push("S");
-  if(r.exits.E) exits.push("E");
-  if(r.exits.W) exits.push("W");
-  if(r.exits.U) exits.push("U");
-  if(r.exits.D) exits.push("D");
-  if(state.room==="hookroom" && state.secretOpen && !exits.includes("E")) exits.push("E");
-  if(state.room==="boardroom" && state.hatchOpen && !exits.includes("D")) exits.push("D");
+  const ex=getAvailableExits();
+  const labels=[];
+  if(ex.W) labels.push("←W");
+  if(ex.N) labels.push("↑N");
+  if(ex.E) labels.push("→E");
+  if(ex.S) labels.push("↓S");
+  if(ex.U) labels.push("↑UP");
+  if(ex.D) labels.push("↓DOWN");
 
-  return (names[state.room]||"UNKNOWN") + "   EXITS: " + (exits.join(" ") || "—");
+  return (names[state.room]||"UNKNOWN") + "   GO: " + (labels.join("  ") || "—");
 }
 
 function renderTranscript(){
@@ -211,6 +289,7 @@ function show(lines=null){
   updateInventory();
   mapEl.textContent=roomArt(state.room).join("\n");
   contextEl.textContent=contextText();
+  updateExitBar();
   pushMessage(lines || roomText(state.room));
   cmd.focus();
 }
@@ -219,6 +298,7 @@ function message(lines){
   updateInventory();
   mapEl.textContent=roomArt(state.room).join("\n");
   contextEl.textContent=contextText();
+  updateExitBar();
   pushMessage(lines);
   cmd.focus();
 }
@@ -333,14 +413,16 @@ function roomLook(id){
   return lines;
 }
 
-function die(){
+function die(reason){
+  const body=reason||`YOU JUMP INTO THE WELL.
+
+YOU HAVE QUITE A LONG TIME
+TO REGRET THIS DECISION.`;
   state.dead=true;
   state.awaiting="again";
   mapEl.textContent="";
-  logEl.textContent=`YOU JUMP INTO THE WELL.
-
-YOU HAVE QUITE A LONG TIME
-TO REGRET THIS DECISION.
+  updateExitBar();
+  logEl.textContent=`${body}
 
                 *
 
@@ -405,16 +487,31 @@ document.addEventListener("keydown",e=>{
     return;
   }
 
+  if(state.dead) return;
+
+  const ex=getAvailableExits();
   const arrows={
     ArrowUp:"N",
     ArrowDown:"S",
     ArrowLeft:"W",
     ArrowRight:"E"
   };
-  if(arrows[e.key]){
+  if(arrows[e.key] && ex[arrows[e.key]]){
     e.preventDefault();
     cmd.value="";
     move(arrows[e.key]);
+    return;
+  }
+  if(e.key==="PageUp" && ex.U){
+    e.preventDefault();
+    cmd.value="";
+    move("U");
+    return;
+  }
+  if(e.key==="PageDown" && ex.D){
+    e.preventDefault();
+    cmd.value="";
+    move("D");
   }
 });
 

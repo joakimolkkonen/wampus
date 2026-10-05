@@ -4,8 +4,14 @@ Snapshot for returning to the project after time away. Reference build: `archive
 
 ## Architecture
 
-- Vanilla HTML/CSS/JS, split into `index.html`, `css/style.css`, `js/rooms.js`, `js/game.js`, `js/parser.js`.
-- Behaviour matches v0.17 except Playtest 1 fixes noted in `CHANGELOG.md`.
+- Vanilla HTML/CSS/JS: `index.html`, `css/style.css`, `js/rooms.js`, `js/game.js`, `js/parser.js`.
+- Active game = v0.17 content plus Playtest 1 fixes and polish (see `CHANGELOG.md`).
+
+## Movement UI
+
+- Arrow keys move **cardinal** exits only (no arrow key = vertical).
+- When **UP** or **DOWN** exits exist, labeled buttons appear under the ASCII map; **Page Up / Page Down** also move vertically.
+- Context line lists exits as `←W  ↑N  →E  ↓S  ↑UP  ↓DOWN` (not raw `U`/`D` letters).
 
 ## Rooms (implemented)
 
@@ -33,31 +39,41 @@ Snapshot for returning to the project after time away. Reference build: `archive
 - Hook room: pull hook → secret east; label `@`.
 - Beyond: ring bell → brass tag with `///`.
 - Rain / mirror / chair: room-specific LOOK and TRY verbs.
-- Board: marble in cup/hole/board → hatch; descend to belowroom.
-- Below: untie bag → black button; press button → **prototype end message**.
+- Board: marble in cup/hole/board → hatch; use **↓ DOWN** (or button) to belowroom.
+- Below: untie bag → black button on floor; **PRESS BUTTON** works without TAKE → **prototype end** (not a death).
 
-## Playtest 1 fixes (this milestone)
+## Deaths (current)
 
-- Board/marble: flexible `PUT` / `PLACE` / `USE … WITH BOARD` phrasing (including `HOLE`, articles, `CLAY MARBLE`).
-- Prototype boundary: after pressing the black button, show unmistakable end-of-content message.
+| Trigger | Room | Notes |
+|---------|------|--------|
+| Jump in well (confirm Y) | `well` | Original death |
+| `CLIMB TREE` | `beyond` | Deliberate; endless trunk |
+| `ENTER MIRROR` / step-into variants | `mirrorroom` | Deliberate |
+| `LIE IN RAIN` / `LIE DOWN IN RAIN` | `rainroom` | Deliberate |
+
+All deaths: short message, **PLAY AGAIN? Y/N**.
+
+## Playtest 1 polish (latest)
+
+- Exit bar + clearer ASCII map labels (N/E/S/W, DOWN, UP).
+- Black button: press in place after opening bag (no forced TAKE).
+- Three additional optional deaths (see table).
+- Prototype ending unchanged after button press.
 
 ## Known issues / limits
 
 - Content after the button press is **not implemented** (teased only: “something large opens”).
 - `wellSolved` appears in well LOOK paths but is not set elsewhere (legacy / unused flag).
 - Hook room marble roll logic references `__oldhook` (unused room id) — hook puzzle uses pull hook only.
-- Single-file v0.16 remains in repo root; canonical reference is v0.17 in `archive/`.
 
 ## Development boundary
 
-**End of playable content:** player obtains the black button in `belowroom`, presses it, receives in-world click + distant “something opens,” then the prototype ending text.
-
-Nothing beyond that is playable; playtesters should not hunt for further rooms.
+**End of playable content:** press the black button (in hand or in the bag), then read the prototype ending text. Successful completion of the current build — not a death.
 
 ## Immediate next milestone (deferred)
 
-- Post–Playtest 1: incorporate blind playtest notes only where they fix confusion or bugs — **no world expansion** until explicitly planned.
-- First content beat after the button (whatever “something large opens” leads to) — **not started**.
+- Post–Playtest 1 feedback: bug/confusion fixes only unless explicitly scoped.
+- First content beat after the button — **not started**.
 
 ## Deliberately deferred
 
