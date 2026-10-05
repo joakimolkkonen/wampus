@@ -1,0 +1,2038 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wampus the Wombat v0.17</title>
+<style>
+  :root{
+    --bg:#020302;
+    --screen:#071008;
+    --fg:#aaffb1;
+    --hi:#d9ffdd;
+    --dim:#5d9a65;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg)}
+  body{
+    height:100vh;display:grid;place-items:center;padding:10px;
+    font-family:"Courier New",Courier,monospace;color:var(--fg)
+  }
+  .terminal{
+    width:min(920px,97vw);height:min(94vh,860px);padding:20px 24px;border-radius:18px;
+    background:radial-gradient(circle at center,rgba(80,180,90,.07),transparent 65%),var(--screen);
+    border:1px solid #173a1b;
+    box-shadow:0 0 0 8px #0d120e,0 0 0 10px #1b211c,0 24px 80px rgba(0,0,0,.82),inset 0 0 70px rgba(0,0,0,.7);
+    position:relative;overflow:hidden
+  }
+  .terminal:after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.018) 0 1px,transparent 1px 4px)
+  }
+  #cornerHint{
+    position:absolute;top:12px;right:18px;z-index:5;
+    color:var(--dim);font-size:.72rem;letter-spacing:.04em
+  }
+  #helpBtn{
+    font:inherit;color:var(--dim);background:transparent;border:0;padding:0;
+    cursor:pointer;text-decoration:underline;text-underline-offset:2px
+  }
+  #helpBtn:hover{color:var(--fg)}
+  .screen{position:relative;z-index:1;height:100%;min-height:0;text-shadow:0 0 7px rgba(120,255,130,.22)}
+  .hidden{display:none!important}
+  .title{display:flex;height:100%;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  h1{margin:0;color:var(--hi);font-size:clamp(2.4rem,8vw,5rem);letter-spacing:.24em}
+  .sub{margin-top:22px;color:var(--dim);line-height:1.7}
+  .press{margin-top:58px;color:var(--hi);animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .game{display:grid;grid-template-rows:34% 66%;gap:10px;height:100%;min-height:0}
+  .mapwrap{display:grid;place-items:center;border-bottom:1px solid rgba(100,180,110,.2);padding:4px 0 10px;min-height:0;overflow:hidden}
+  #map{margin:0;white-space:pre;color:var(--hi);font-size:clamp(11px,1.35vw,16px);line-height:1.00}
+  .console{min-height:0;display:flex;flex-direction:column}
+  #onboarding{
+    color:var(--dim);font-size:.78rem;line-height:1.45;margin-bottom:10px;
+    letter-spacing:.02em
+  }
+  #inventory{
+    color:var(--dim);font-size:.78rem;line-height:1.4;margin-bottom:8px;
+    border-bottom:1px solid rgba(100,180,110,.14);padding-bottom:8px
+  }
+  #contextline{
+    color:var(--dim);font-size:.76rem;line-height:1.4;margin-bottom:6px;
+    letter-spacing:.03em
+  }
+  #log{
+    white-space:pre-wrap;line-height:1.28;flex:1;min-height:0;overflow:hidden;
+    padding-right:4px;padding-bottom:5px;font-size:.88rem
+  }
+  .historybar{
+    display:flex;justify-content:flex-end;gap:8px;margin:-2px 0 5px;
+    font-size:.68rem;color:var(--dim)
+  }
+  .historybar button{
+    font:inherit;color:var(--dim);background:transparent;border:0;padding:0;
+    cursor:pointer;text-decoration:underline;text-underline-offset:2px
+  }
+  .historybar button:hover{color:var(--fg)}
+  .prompt{margin-top:12px;display:flex;gap:8px;align-items:center;color:var(--hi)}
+  #cmd{
+    flex:1;border:0;outline:0;background:transparent;color:var(--hi);font:inherit;
+    caret-color:var(--hi);text-transform:uppercase
+  }
+  @media(max-width:700px){
+    body{padding:4px}
+    .terminal{width:99vw;height:98vh;padding:16px 12px}
+    .game{grid-template-rows:31% 69%}
+    #map{font-size:11px}
+    #log{font-size:.82rem}
+    #cornerHint{font-size:.62rem;right:10px}
+  }
+</style>
+</head>
+<body>
+<main class="terminal">
+  <div id="cornerHint">ARROWS MOVE · TYPE COMMANDS · <button id="helpBtn" type="button">HELP</button></div>
+  <section id="title" class="screen title">
+    <h1>WAMPUS<br><span style="font-size:.42em;letter-spacing:.16em">THE WOMBAT</span></h1>
+    <div class="sub">A GAME OF EXPLORATION<br>AND POOR DECISIONS</div>
+    <div class="press">[ PRESS ENTER ]</div>
+  </section>
+
+  <section id="game" class="screen game hidden">
+    <div class="mapwrap">
+      <pre id="map"></pre>
+    </div>
+    <div class="console">
+      <div id="onboarding">
+        ARROW KEYS MOVE. TYPE SIMPLE COMMANDS.
+        TRY: LOOK, SHOUT, JUMP, HELP
+      </div>
+      <div id="contextline"></div>
+      <div id="inventory"></div>
+      <div id="log"></div>
+      <div class="prompt"><span>&gt;</span><input id="cmd" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const ROOMS = {
+  start:{
+    exits:{S:"corridor"},
+    art:[
+      "       ┌─────────┐",
+      "       │         │",
+      "       │    @    │",
+      "       │         │",
+      "       └────┬────┘",
+      "            │",
+      "            ?"
+    ],
+    text:[
+      "YOU ARE IN A SMALL STONE ROOM.",
+      "",
+      "YOU DON'T REMEMBER COMING HERE.",
+      "",
+      "THERE IS A PASSAGE TO THE SOUTH."
+    ]
+  },
+
+  corridor:{
+    exits:{N:"start",E:"well",W:"box"},
+    art:[
+      "             ?",
+      "             │",
+      "      ┌──────┴──────┐",
+      "  ? ──┤      @      ├── ?",
+      "      └─────────────┘"
+    ],
+    text:[
+      "THE PASSAGE WIDENS.",
+      "",
+      "SOMETHING HAS SCRATCHED THREE LINES",
+      "INTO THE NORTH WALL.",
+      "",
+      "///",
+      "",
+      "YOU HEAR WATER TO THE EAST."
+    ]
+  },
+
+  well:{
+    exits:{W:"corridor"},
+    art:[
+      "      ┌─────────────┐",
+      "──────┤      ○      │",
+      "      │             │",
+      "      │      @      │",
+      "      └─────────────┘"
+    ],
+    text:[
+      "THERE IS A WELL HERE.",
+      "",
+      "IT IS VERY DEEP.",
+      "",
+      "SOMETHING GLITTERS AT THE BOTTOM."
+    ]
+  },
+
+  box:{
+    exits:{E:"corridor",S:"stairs"},
+    artClosed:[
+      "      ┌──────────────┐",
+      "      │   [ ]        │",
+      "      │         @    ├──── ?",
+      "      │              │",
+      "      └──────┬───────┘",
+      "             │",
+      "             ?"
+    ],
+    artOpen:[
+      "      ┌──────────────┐",
+      "      │   [o]        │",
+      "      │         @    ├──── ?",
+      "      │              │",
+      "      └──────┬───────┘",
+      "             │",
+      "             ?"
+    ],
+    text:[
+      "A SMALL WOODEN BOX SITS AGAINST THE WALL.",
+      "",
+      "SOMEBODY HAS WRITTEN:",
+      "",
+      "        FOR WAMPUS",
+      "",
+      "ON THE LID."
+    ]
+  },
+
+  stairs:{
+    exits:{N:"box",E:"creature"},
+    art:[
+      "             ?",
+      "             │",
+      "      ┌──────┴──────┐",
+      "      │             │",
+      "      │      @      ├──── ?",
+      "      │             │",
+      "      └─────────────┘"
+    ],
+    text:[
+      "THE PASSAGE NARROWS.",
+      "",
+      "        scrape",
+      "",
+      "SOMETHING IS MOVING AHEAD.",
+      "",
+      "WHEN YOU MOVE, IT STOPS."
+    ]
+  },
+
+  creature:{
+    exits:{W:"stairs",E:"hookroom"},
+    artInitial:[
+      "      ┌─────────────┐",
+      "──────┤      @      ├──── ?",
+      "      │       ?  o  │",
+      "      └─────────────┘"
+    ],
+    artMarble:[
+      "      ┌─────────────┐",
+      "──────┤      @      ├──── ?",
+      "      │          o  │",
+      "      └─────────────┘"
+    ],
+    artEmpty:[
+      "      ┌─────────────┐",
+      "──────┤      @      ├──── ?",
+      "      │             │",
+      "      └─────────────┘"
+    ]
+
+  },
+
+  hookroom:{
+    exits:{W:"creature"},
+    artClosed:[
+      "      ┌─────────────┐",
+      "──────┤      @      │",
+      "      │             │",
+      "      │        ┐    │",
+      "      └─────────────┘"
+    ],
+    artOpen:[
+      "      ┌─────────────┐",
+      "──────┤      @      ├────",
+      "      │             │",
+      "      │        ┐    │",
+      "      └─────────────┘"
+    ],
+    text:[
+      "A SMALL TILED ROOM.",
+      "",
+      "AN IRON HOOK PROTRUDES",
+      "FROM THE EAST WALL.",
+      "",
+      "A SMALL METAL LABEL",
+      "IS FIXED BENEATH IT."
+    ]
+  },
+
+  beyond:{
+    exits:{W:"hookroom",N:"rainroom"},
+    art:[
+      "      │           │",
+      "──────┤     @     │",
+      "      │           │",
+      "      │     ♣     │",
+      "      │    /|\\    │",
+      "      │   / | \\   │",
+      "      │           │"
+    ],
+    text:[
+      "THERE IS A TREE HERE.",
+      "",
+      "A REAL ONE, APPARENTLY.",
+      "",
+      "ITS TRUNK DISAPPEARS UPWARD",
+      "INTO DARKNESS.",
+      "",
+      "YOU CANNOT SEE THE CEILING.",
+      "",
+      "ONE ROOT DISAPPEARS",
+      "INTO A CRACK IN THE FLOOR.",
+      "",
+      "SOMEWHERE FAR AWAY:",
+      "",
+      "        ding",
+      "",
+      "THE PASSAGE CONTINUES NORTH."
+    ]
+  },
+
+  rainroom:{
+    exits:{S:"beyond",E:"mirrorroom",N:"chairroom"},
+    art:[
+      "       │     │",
+      "   .   │  @  │   .",
+      " .   . │     │ .",
+      "───────┘     └───────",
+      "    .     .     ."
+    ],
+    text:[
+      "IT IS RAINING HERE.",
+      "",
+      "ONLY HERE.",
+      "",
+      "THE STONE FLOOR IS DRY.",
+      "",
+      "THE RAIN FALLS THROUGH IT",
+      "WITHOUT SPLASHING."
+    ]
+  },
+
+  mirrorroom:{
+    exits:{W:"rainroom"},
+    art:[
+      "┌─────────────────┐",
+      "│       ┌───┐     │",
+      "│   @   │ ? │     │",
+      "│       └───┘     │",
+      "└───────┬─────────┘",
+      "        │"
+    ],
+    text:[
+      "A NARROW ROOM.",
+      "",
+      "A TALL MIRROR STANDS",
+      "AGAINST THE FAR WALL.",
+      "",
+      "YOUR REFLECTION IS NOT THERE.",
+      "",
+      "SOMETHING ELSE IS."
+    ]
+  },
+
+  chairroom:{
+    exits:{S:"rainroom",E:"boardroom"},
+    art:[
+      "       │     │",
+      "       │  @  ├────",
+      "       │     │",
+      "       │  h  │",
+      "       └─────┘"
+    ],
+    text:[
+      "A VERY SMALL ROOM.",
+      "",
+      "THERE IS A WOODEN CHAIR.",
+      "",
+      "IT FACES THE SOUTH WALL.",
+      "",
+      "THE SOUTH WALL IS BLANK."
+    ]
+  },
+
+  boardroom:{
+    exits:{W:"chairroom"},
+    art:[
+      "───────┐       ┌───────",
+      "       │   @   │",
+      "       │       │",
+      "       │ o o o │",
+      "       │ o o o │",
+      "       └───────┘"
+    ],
+    text:[
+      "A LOW STONE TABLE",
+      "FILLS MOST OF THE ROOM.",
+      "",
+      "ON IT RESTS A LONG",
+      "WOODEN BOARD.",
+      "",
+      "TWO ROWS OF SHALLOW CUPS",
+      "HAVE BEEN CARVED INTO IT.",
+      "",
+      "MOST ARE EMPTY."
+    ]
+  },
+
+  belowroom:{
+    exits:{U:"boardroom"},
+    art:[
+      "        │   │",
+      "        │ @ │",
+      "        │   │",
+      "        │ ♣ │",
+      "        └───┘"
+    ],
+    text:[
+      "YOU ARE UNDER THE BOARD ROOM.",
+      "",
+      "THIS SHOULD NOT BE POSSIBLE.",
+      "",
+      "A THIN ROOT EMERGES",
+      "FROM THE CEILING.",
+      "",
+      "TIED TO IT IS",
+      "A SMALL CLOTH BAG."
+    ]
+  }
+
+};
+
+let state;
+const title=document.getElementById("title");
+const game=document.getElementById("game");
+const mapEl=document.getElementById("map");
+const contextEl=document.getElementById("contextline");
+const logEl=document.getElementById("log");
+const cmd=document.getElementById("cmd");
+const inventoryEl=document.getElementById("inventory");
+const onboardingEl=document.getElementById("onboarding");
+
+function freshState(){
+  return {
+    room:"start",
+    dead:false,
+    awaiting:null,
+    boxOpened:false,
+    boxContents:["BRASS BELL","PIECE OF STRING","HALF AN APPLE"],
+    inventory:[],
+    dropped:{},
+    wellBellLowered:false,
+    hookWeighted:false,
+    secretOpen:false,
+    creaturePhase:"initial",
+    treeBellEvent:false,
+    mirrorTouched:false,
+    chairSat:false,
+    boardMarble:false,
+    rainDrank:false,
+    hatchOpen:false,
+    transcript:[],
+    transcriptIndex:-1
+  };
+}
+
+function roomArt(id){
+  let base;
+
+  if(id==="box"){
+    base=[...(state.boxOpened ? ROOMS.box.artOpen : ROOMS.box.artClosed)];
+  } else if(id==="hookroom"){
+    base=[...(state.secretOpen ? ROOMS.hookroom.artOpen : ROOMS.hookroom.artClosed)];
+  } else if(id==="creature"){
+    if(state.creaturePhase==="marbleTaken"){
+      base=[...ROOMS.creature.artEmpty];
+    } else if(droppedHere().includes("CLAY MARBLE")){
+      base=[...ROOMS.creature.artMarble];
+    } else if(state.creaturePhase==="fledShout" || state.creaturePhase==="fledQuiet"){
+      base=[...ROOMS.creature.artEmpty];
+    } else {
+      base=[...ROOMS.creature.artInitial];
+    }
+  } else {
+    base=[...ROOMS[id].art];
+  }
+
+  if(droppedHere().length){
+    base.push("", "              ·");
+  }
+  return base;
+}
+
+function boxContentsText(){
+  if(state.boxContents.length===0) return ["THE BOX IS OPEN.","","IT IS EMPTY."];
+  return ["THE BOX IS OPEN.","","IT CONTAINS:","",...state.boxContents.map(x=>"        "+x)];
+}
+
+function roomText(id){
+  if(id==="box" && state.boxOpened) return boxContentsText();
+
+  if(id==="creature"){
+    if(state.creaturePhase==="initial"){
+      return [
+        "SOMETHING SMALL AND FURRY",
+        "IS CROUCHED NEAR THE EAST WALL.",
+        "",
+        "YOU CANNOT SEE ITS FACE.",
+        "",
+        "A CLAY MARBLE RESTS BESIDE IT."
+      ];
+    }
+    if(state.creaturePhase==="fledShout"){
+      return [
+        "THE FURRY THING FLINCHED AT THE SOUND.",
+        "",
+        "IT BOLTED OUT OF SIGHT.",
+        "",
+        "THE CLAY MARBLE IS STILL HERE."
+      ];
+    }
+    if(state.creaturePhase==="fledQuiet"){
+      const here=droppedHere().includes("CLAY MARBLE");
+      return here ? [
+        "THE FURRY THING IS GONE.",
+        "",
+        "A CLAY MARBLE ROLLS",
+        "IN A SLOW CIRCLE.",
+        "",
+        "IT SHOULD HAVE STOPPED BY NOW."
+      ] : [
+        "THE FURRY THING IS GONE.",
+        "",
+        "THE PASSAGE IS QUIET NOW."
+      ];
+    }
+    return ["THE PASSAGE IS QUIET NOW."];
+  }
+
+  const base=[...ROOMS[id].text];
+  const dropped=droppedHere();
+  if(dropped.length){
+    base.push("","ON THE FLOOR:  " + dropped.join(" · "));
+  }
+  return base;
+
+}
+
+function updateInventory(){
+  const slots=[...state.inventory];
+  while(slots.length<3) slots.push("—");
+  const short=slots.map(x=>({
+    "BRASS BELL":"BELL",
+    "PIECE OF STRING":"STRING",
+    "HALF AN APPLE":"HALF APPLE",
+    "CLAY MARBLE":"MARBLE",
+    "BELL ON STRING":"BELL+STRING",
+    "BRASS KEY":"KEY",
+    "BRASS TAG":"TAG",
+    "CLOTH BAG":"BAG",
+    "BLACK BUTTON":"BUTTON"
+  }[x] || x));
+  inventoryEl.textContent="CARRYING:  [ " + short.join(" ]  [ ") + " ]";
+}
+
+function contextText(){
+  const names={
+    start:"SMALL STONE ROOM",
+    corridor:"CROSS PASSAGE",
+    well:"WELL ROOM",
+    box:"BOX ROOM",
+    stairs:"NARROW PASSAGE",
+    creature:"FURRY THING",
+    hookroom:"TILED ROOM",
+    beyond:"TREE ROOM",
+    rainroom:"RAIN ROOM",
+    mirrorroom:"MIRROR ROOM",
+    chairroom:"CHAIR ROOM",
+    boardroom:"BOARD ROOM",
+    belowroom:"UNDER THE BOARD"
+  };
+
+  const exits=[];
+  const r=ROOMS[state.room];
+  if(r.exits.N) exits.push("N");
+  if(r.exits.S) exits.push("S");
+  if(r.exits.E) exits.push("E");
+  if(r.exits.W) exits.push("W");
+  if(r.exits.U) exits.push("U");
+  if(r.exits.D) exits.push("D");
+  if(state.room==="hookroom" && state.secretOpen && !exits.includes("E")) exits.push("E");
+  if(state.room==="boardroom" && state.hatchOpen && !exits.includes("D")) exits.push("D");
+
+  return (names[state.room]||"UNKNOWN") + "   EXITS: " + (exits.join(" ") || "—");
+}
+
+function renderTranscript(){
+  if(!state.transcript.length){
+    logEl.textContent="";
+    return;
+  }
+  if(state.transcriptIndex < 0 || state.transcriptIndex >= state.transcript.length){
+    state.transcriptIndex=state.transcript.length-1;
+  }
+  logEl.textContent=state.transcript[state.transcriptIndex];
+}
+
+function pushMessage(lines){
+  const display=(Array.isArray(lines)?lines:[String(lines)]);
+  state.transcript.push(display.join("\n"));
+  if(state.transcript.length>20) state.transcript=state.transcript.slice(-20);
+  state.transcriptIndex=state.transcript.length-1;
+  renderTranscript();
+}
+
+function show(lines=null){
+  updateInventory();
+  mapEl.textContent=roomArt(state.room).join("\n");
+  contextEl.textContent=contextText();
+  pushMessage(lines || roomText(state.room));
+  cmd.focus();
+}
+
+function message(lines){
+  updateInventory();
+  mapEl.textContent=roomArt(state.room).join("\n");
+  contextEl.textContent=contextText();
+  pushMessage(lines);
+  cmd.focus();
+}
+
+function startGame(){
+  title.classList.add("hidden");
+  game.classList.remove("hidden");
+  state=freshState();
+  onboardingEl.style.display="block";
+  show();
+}
+
+function move(dir){
+  if(state.dead) return;
+  let dest=ROOMS[state.room].exits[dir];
+
+  if(state.room==="hookroom" && dir==="E" && state.secretOpen) dest="beyond";
+  if(state.room==="boardroom" && dir==="D" && state.hatchOpen) dest="belowroom";
+  if(!dest){
+    message(["YOU CANNOT GO THAT WAY."]);
+    return;
+  }
+
+  const leaving=state.room;
+
+  if(leaving==="well" && state.wellBellLowered){
+    state.wellBellLowered=false;
+  }
+
+  state.room=dest;
+  if(dest==="belowroom" && state.boardMarble){
+    if(!state.dropped.belowroom) state.dropped.belowroom=[];
+    if(!state.dropped.belowroom.includes("CLAY MARBLE") && !has("CLAY MARBLE")){
+      state.dropped.belowroom.push("CLAY MARBLE");
+    }
+  }
+  state.awaiting=null;
+  onboardingEl.style.display = state.room==="start" ? "block" : "none";
+
+  if(dest==="creature" && state.creaturePhase==="initial"){
+    state.creaturePhase="fledQuiet";
+    if(!state.dropped.creature) state.dropped.creature=[];
+    if(!state.dropped.creature.includes("CLAY MARBLE")){
+      state.dropped.creature.push("CLAY MARBLE");
+    }
+    show([
+      "SOMETHING SMALL AND FURRY LOOKS UP.",
+      "",
+      "THEN IT DARTS INTO THE DARK.",
+      "",
+      "A CLAY MARBLE IS LEFT BEHIND.",
+      "IT ROLLS IN A SLOW CIRCLE.",
+      "",
+      "THE FLOOR IS LEVEL."
+    ]);
+    return;
+  }
+
+  show();
+}
+
+function norm(s){return s.trim().toUpperCase().replace(/\s+/g," ")}
+function has(item){return state.inventory.includes(item)}
+
+function droppedHere(){
+  return state.dropped[state.room] || [];
+}
+
+function addDropped(item){
+  if(!state.dropped[state.room]) state.dropped[state.room]=[];
+  state.dropped[state.room].push(item);
+}
+
+function takeDropped(item){
+  const here=droppedHere();
+  const idx=here.indexOf(item);
+  if(idx===-1) return false;
+  here.splice(idx,1);
+  state.inventory.push(item);
+  return true;
+}
+
+function roomLook(id){
+  const base = {
+    start:["YOU LOOK AROUND.","","ROUGH STONE. NO WINDOWS.","","THE ONLY PASSAGE LEADS SOUTH."],
+    corridor:["YOU LOOK AROUND.","","THE PASSAGE RUNS NORTH, EAST AND WEST.","","THE THREE SCRATCHES ARE ON THE NORTH WALL."],
+    well:["YOU LOOK AROUND.","","STONE WALLS. A WELL.","","SOMETHING GLITTERS FAR BELOW."],
+    stairs:["YOU LOOK AHEAD.","","THE PASSAGE CONTINUES EAST.","","YOU HEARD SOMETHING MOVE AHEAD."],
+    creature:["YOU LOOK AROUND.","",state.creaturePhase==="initial" ? "THE SMALL FURRY THING IS STILL HERE." : "THE PASSAGE CONTINUES EAST AND WEST."],
+    hookroom: state.secretOpen
+      ? ["YOU LOOK AROUND.","","WHITE TILES. AN IRON HOOK. A SMALL METAL LABEL.","","A PASSAGE IS OPEN TO THE EAST."]
+      : ["YOU LOOK AROUND.","","WHITE TILES. AN IRON HOOK. A SMALL METAL LABEL.","","THERE IS NO OBVIOUS WAY FORWARD."],
+    beyond:["YOU LOOK AROUND.","","A REAL TREE GROWS HERE BENEATH NO VISIBLE CEILING.","","ONE ROOT DISAPPEARS INTO A CRACK IN THE FLOOR.","","THE PASSAGE CONTINUES NORTH."],
+    rainroom:["YOU LOOK AROUND.","","RAIN FALLS THROUGH THE DRY STONE FLOOR.","","PASSAGES LEAD NORTH, EAST AND SOUTH."],
+    mirrorroom:["YOU LOOK AROUND.","","A TALL MIRROR STANDS AGAINST THE FAR WALL.","","YOUR REFLECTION IS NOT THERE.","","THE WAY BACK IS WEST."],
+    chairroom:["YOU LOOK AROUND.","","A WOODEN CHAIR FACES THE BLANK SOUTH WALL.","","PASSAGES LEAD SOUTH AND EAST."],
+    boardroom:["YOU LOOK AROUND.","","A LOW STONE TABLE HOLDS A LONG BOARD OF SHALLOW CUPS.","",state.hatchOpen ? "THE TABLE HAS MOVED. THERE IS A WAY DOWN." : "THE WAY BACK IS WEST."],
+    belowroom:["YOU LOOK AROUND.","","A THIN ROOT EMERGES FROM THE CEILING.","","A SMALL CLOTH BAG IS TIED TO IT.","","THE WAY BACK IS UP."]
+  };
+
+  if(id==="box"){
+    const lines=["YOU LOOK AROUND.","","THE ROOM HAS PASSAGES EAST AND SOUTH.","",state.boxOpened ? "THE WOODEN BOX IS OPEN." : "THE WOODEN BOX IS CLOSED."];
+    if(state.boxOpened && state.boxContents.length) lines.push("", "IT STILL CONTAINS:", "", ...state.boxContents.map(x=>"        "+x));
+    const dropped=droppedHere();
+    if(dropped.length) lines.push("", "ON THE FLOOR:  " + dropped.join(" · "));
+    return lines;
+  }
+
+  const lines=[...(base[id] || roomText(id))];
+  const dropped=droppedHere();
+  if(dropped.length) lines.push("", "ON THE FLOOR:  " + dropped.join(" · "));
+  return lines;
+}
+
+function die(){
+  state.dead=true;
+  state.awaiting="again";
+  mapEl.textContent="";
+  logEl.textContent=`YOU JUMP INTO THE WELL.
+
+YOU HAVE QUITE A LONG TIME
+TO REGRET THIS DECISION.
+
+                *
+
+             YOU DIED.
+
+          PLAY AGAIN? Y/N`;
+  logEl.scrollTop=0;
+  cmd.focus();
+}
+
+function takeItem(name){
+  if(state.inventory.length>=3) return "YOUR HANDS ARE FULL.";
+
+  if(droppedHere().includes(name)){
+    takeDropped(name);
+    return "YOU TAKE THE "+name+".";
+  }
+
+  if(name==="CLAY MARBLE"){
+    if(state.room!=="creature"){
+      return has(name) ? "YOU ALREADY HAVE THAT." : "THERE IS NOTHING LIKE THAT HERE.";
+    }
+    if(state.creaturePhase==="initial"){
+      return "THE FURRY THING PUTS ONE PAW ON THE MARBLE.";
+    }
+    if(state.creaturePhase==="fledShout"){
+      state.creaturePhase="marbleTaken";
+      state.inventory.push(name);
+      return "YOU TAKE THE CLAY MARBLE.";
+    }
+    if(droppedHere().includes("CLAY MARBLE")){
+      takeDropped("CLAY MARBLE");
+      state.creaturePhase="marbleTaken";
+      return "YOU TAKE THE CLAY MARBLE.";
+    }
+    return has(name) ? "YOU ALREADY HAVE THAT." : "THERE IS NOTHING LIKE THAT HERE.";
+  }
+
+  if(state.room!=="box" || !state.boxOpened || !state.boxContents.includes(name)){
+    return has(name) ? "YOU ALREADY HAVE THAT." : "THERE IS NOTHING LIKE THAT HERE.";
+  }
+
+  state.boxContents=state.boxContents.filter(x=>x!==name);
+  state.inventory.push(name);
+  if(state.boxContents.length) return "YOU TAKE THE "+name+".\n\nTHE BOX STILL CONTAINS:\n\n"+state.boxContents.map(x=>"        "+x).join("\n");
+  return "YOU TAKE THE "+name+".\n\nTHE BOX IS EMPTY.";
+}
+
+function handle(raw){
+  let input=norm(raw);
+  if(!input) return;
+
+  // Old-adventure convenience.
+  input=input
+    .replace(/^EXAMINE\b/,"LOOK")
+    .replace(/^INSPECT\b/,"LOOK")
+    .replace(/^LOOK AT\b/,"LOOK");
+
+  // Forgive a few very common one-keystroke mistakes.
+  const typoVerbs={
+    "LOK":"LOOK","LKO":"LOOK",
+    "TAEK":"TAKE","TKE":"TAKE",
+    "OPNE":"OPEN","OEPEN":"OPEN",
+    "PUL":"PULL","PSUH":"PUSH",
+    "THRO":"THROW","RIGN":"RING"
+  };
+  const first=input.split(" ")[0];
+  if(typoVerbs[first]){
+    input=typoVerbs[first] + input.slice(first.length);
+  }
+  if(state.room!=="start" && input!=="HELP") onboardingEl.style.display="none";
+
+  if(state.awaiting==="jump"){
+    if(["Y","YES"].includes(input)){state.awaiting=null;die();return}
+    if(["N","NO"].includes(input)){state.awaiting=null;message(["A RARE MOMENT OF GOOD JUDGEMENT."]);return}
+    message(["YES OR NO WILL DO."]);
+    state.awaiting="jump";
+    return;
+  }
+
+  if(state.awaiting==="again"){
+    if(["Y","YES","AGAIN"].includes(input)){
+      state=freshState();
+      show();
+      return;
+    }
+    if(["N","NO"].includes(input)){
+      state.awaiting=null;
+      state.dead=true;
+      mapEl.textContent="";
+      logEl.textContent="THE SCREEN STAYS DARK.";
+      cmd.focus();
+      return;
+    }
+    logEl.textContent="YOU ARE DEAD.\n\nPLAY AGAIN? Y/N";
+    cmd.focus();
+    return;
+  }
+
+  const dirs={
+    "N":"N","NORTH":"N","GO NORTH":"N",
+    "S":"S","SOUTH":"S","GO SOUTH":"S",
+    "E":"E","EAST":"E","GO EAST":"E",
+    "W":"W","WEST":"W","GO WEST":"W",
+    "U":"U","UP":"U","GO UP":"U",
+    "D":"D","DOWN":"D","GO DOWN":"D"
+  };
+  if(dirs[input]){move(dirs[input]);return}
+
+  if(state.room==="stairs" && ["LOOK AHEAD","LOOK PASSAGE"].includes(input)){
+    message(roomLook("stairs"));
+    return;
+  }
+
+  if(state.room==="beyond" && input==="LOOK TREE"){
+    message([
+      "THE BARK IS PALE AND SMOOTH.",
+      "",
+      "THE TRUNK CONTINUES UPWARD",
+      "BEYOND YOUR LIGHT.",
+      "",
+      "YOU CANNOT TELL",
+      "WHAT KIND OF TREE IT IS."
+    ]);
+    return;
+  }
+
+  if(state.room==="beyond" && ["LOOK ROOT","LOOK ROOTS"].includes(input)){
+    message([
+      "MOST OF THE ROOTS DISAPPEAR",
+      "INTO DRY SOIL.",
+      "",
+      "ONE PASSES THROUGH",
+      "A CRACK IN THE STONE FLOOR.",
+      "",
+      "IT IS SLIGHTLY WET."
+    ]);
+    return;
+  }
+
+  // --- RAIN ROOM --------------------------------------------------------
+  if(state.room==="rainroom" && ["LOOK RAIN","TOUCH RAIN","CATCH RAIN"].includes(input)){
+    message([
+      "THE RAIN IS COLD.",
+      "",
+      "IT PASSES THROUGH YOUR HAND",
+      "AND CONTINUES DOWNWARD.",
+      "",
+      "YOUR HAND REMAINS DRY."
+    ]);
+    return;
+  }
+
+  if(state.room==="rainroom" && ["DRINK RAIN","TASTE RAIN"].includes(input)){
+    state.rainDrank=true;
+    message([
+      "YOU OPEN YOUR MOUTH.",
+      "",
+      "ONE DROP LANDS ON YOUR TONGUE.",
+      "",
+      "IT TASTES LIKE AN APPLE.",
+      "",
+      "NOT THIS APPLE.",
+      "",
+      "AN APPLE YOU HAVE NOT EATEN YET."
+    ]);
+    return;
+  }
+
+  if(state.room==="rainroom" && ["SHOUT","YELL"].includes(input)){
+    message([
+      "YOU SHOUT.",
+      "",
+      "THE RAIN STOPS.",
+      "",
+      "        ...",
+      "",
+      "YOU SHOUT AGAIN.",
+      "",
+      "THE RAIN RESUMES.",
+      "",
+      "YOU DID NOT SHOUT AGAIN."
+    ]);
+    return;
+  }
+
+  // --- MIRROR ROOM ------------------------------------------------------
+  if(state.room==="mirrorroom" && ["LOOK MIRROR","LOOK REFLECTION"].includes(input)){
+    message([
+      "THE MIRROR SHOWS THE ROOM.",
+      "",
+      "IT SHOWS THE DOOR.",
+      "IT SHOWS THE FLOOR.",
+      "",
+      "IT DOES NOT SHOW YOU.",
+      "",
+      "IN YOUR PLACE STANDS",
+      "A SMALL DARK SHAPE.",
+      "",
+      "YOU CANNOT SEE ITS FACE."
+    ]);
+    return;
+  }
+
+  if(state.room==="mirrorroom" && ["TOUCH MIRROR","PUSH MIRROR","LICK MIRROR"].includes(input)){
+    if(!state.mirrorTouched){
+      state.mirrorTouched=true;
+      message([
+        "YOUR FINGERS TOUCH COLD GLASS.",
+        "",
+        "THE SMALL SHAPE",
+        "TOUCHES THE GLASS TOO.",
+        "",
+        "WITH THE WRONG HAND."
+      ]);
+    } else {
+      message([
+        "THE GLASS IS COLD.",
+        "",
+        "THE OTHER HAND",
+        "IS ALREADY WAITING."
+      ]);
+    }
+    return;
+  }
+
+  if(state.room==="mirrorroom" && ["SHOUT","YELL","SHOUT AT MIRROR"].includes(input)){
+    message([
+      "YOU SHOUT AT THE MIRROR.",
+      "",
+      "THE SMALL SHAPE",
+      "DOES NOT OPEN ITS MOUTH.",
+      "",
+      "SOMEWHERE BEHIND YOU:",
+      "",
+      "        ding"
+    ]);
+    return;
+  }
+
+  if(state.room==="mirrorroom" && ["BREAK MIRROR","HIT MIRROR","KICK MIRROR"].includes(input)){
+    message([
+      "YOU CONSIDER IT.",
+      "",
+      "THE THING IN THE MIRROR",
+      "SHAKES ITS HEAD.",
+      "",
+      "YOU DECIDE TO POSTPONE",
+      "THIS PARTICULAR EXPERIMENT."
+    ]);
+    return;
+  }
+
+  // --- CHAIR ROOM -------------------------------------------------------
+  if(state.room==="chairroom" && ["LOOK CHAIR","EXAMINE CHAIR"].includes(input)){
+    message([
+      "AN ORDINARY WOODEN CHAIR.",
+      "",
+      "FOUR LEGS.",
+      "ONE SEAT.",
+      "ONE BACK.",
+      "",
+      "AFTER THE LAST FEW ROOMS,",
+      "THIS IS SUSPICIOUS."
+    ]);
+    return;
+  }
+
+  if(state.room==="chairroom" && ["LOOK WALL","LOOK SOUTH WALL"].includes(input)){
+    if(!state.chairSat){
+      message([
+        "A BLANK STONE WALL.",
+        "",
+        "THERE IS NOTHING ON IT."
+      ]);
+    } else {
+      message([
+        "A BLANK STONE WALL.",
+        "",
+        "THERE IS STILL NOTHING ON IT.",
+        "",
+        "YOU ARE LESS CERTAIN NOW."
+      ]);
+    }
+    return;
+  }
+
+  if(state.room==="chairroom" && ["SIT","SIT CHAIR","SIT ON CHAIR"].includes(input)){
+    state.chairSat=true;
+    message([
+      "YOU SIT.",
+      "",
+      "THE CHAIR IS COMFORTABLE.",
+      "",
+      "YOU FACE THE BLANK WALL.",
+      "",
+      "        ...",
+      "",
+      "AFTER A WHILE,",
+      "THE WALL BLINKS.",
+      "",
+      "YOU STAND UP."
+    ]);
+    return;
+  }
+
+  if(state.room==="chairroom" && ["MOVE CHAIR","PUSH CHAIR","PULL CHAIR"].includes(input)){
+    message([
+      "YOU MOVE THE CHAIR.",
+      "",
+      "SCRATCHED INTO THE FLOOR",
+      "BENEATH IT:",
+      "",
+      "        DO NOT SIT"
+    ]);
+    return;
+  }
+
+  // --- BOARD ROOM / FIRST REAL CROSS-ROOM PUZZLE -----------------------
+  if(state.room==="boardroom" && ["LOOK BOARD","LOOK CUPS","LOOK TABLE"].includes(input)){
+    message([
+      "A LONG WOODEN BOARD.",
+      "",
+      "TWO ROWS OF SHALLOW CUPS.",
+      "",
+      "ELEVEN ARE EMPTY.",
+      "",
+      "THE TWELFTH CONTAINS",
+      "A PERFECTLY ROUND HOLE."
+    ]);
+    return;
+  }
+
+  if(state.room==="boardroom" && ["PUT MARBLE IN BOARD","PUT MARBLE IN CUP","PLACE MARBLE IN CUP","USE MARBLE ON BOARD","USE MARBLE WITH BOARD"].includes(input)){
+    if(!has("CLAY MARBLE")){message(["YOU DON'T HAVE THE MARBLE."]);return}
+
+    state.inventory=state.inventory.filter(x=>x!=="CLAY MARBLE");
+    state.boardMarble=true;
+    state.hatchOpen=true;
+
+    message([
+      "YOU PLACE THE MARBLE",
+      "IN THE FIRST CUP.",
+      "",
+      "IT ROLLS INTO THE SECOND.",
+      "",
+      "THEN THE THIRD.",
+      "",
+      "THEN THE FOURTH.",
+      "",
+      "THERE IS NO CHANNEL",
+      "BETWEEN THE CUPS.",
+      "",
+      "IT CONTINUES.",
+      "",
+      "ON THE TWELFTH CUP",
+      "THE MARBLE DROPS",
+      "THROUGH THE HOLE.",
+      "",
+      "        clack",
+      "",
+      "THE STONE TABLE",
+      "SLIDES SIX INCHES ASIDE.",
+      "",
+      "THERE IS A WAY DOWN."
+    ]);
+    return;
+  }
+
+  if(state.room==="boardroom" && state.boardMarble && ["TAKE MARBLE","GET MARBLE"].includes(input)){
+    message([
+      "THE MARBLE IS GONE.",
+      "",
+      "YOU HEARD IT LAND",
+      "SOMEWHERE BELOW."
+    ]);
+    return;
+  }
+
+  // --- BELOW ------------------------------------------------------------
+  if(state.room==="belowroom" && ["LOOK BAG","TAKE BAG","GET BAG"].includes(input)){
+    if(input.startsWith("TAKE") || input.startsWith("GET")){
+      message([
+        "THE BAG IS TIED",
+        "TO THE ROOT.",
+        "",
+        "THE KNOT IS VERY SMALL.",
+        "",
+        "YOUR FINGERS ARE NOT."
+      ]);
+    } else {
+      message([
+        "A SMALL CLOTH BAG.",
+        "",
+        "IT IS TIED TO THE ROOT",
+        "WITH A RIDICULOUSLY",
+        "NEAT LITTLE KNOT.",
+        "",
+        "SOMETHING HARD IS INSIDE."
+      ]);
+    }
+    return;
+  }
+
+  if(state.room==="belowroom" && ["OPEN BAG","UNTIE BAG","UNTIE KNOT","PULL BAG"].includes(input)){
+    if(!state.dropped.belowroom) state.dropped.belowroom=[];
+    if(!state.dropped.belowroom.includes("BLACK BUTTON") && !has("BLACK BUTTON")){
+      state.dropped.belowroom.push("BLACK BUTTON");
+    }
+    message([
+      "THE KNOT COMES UNDONE",
+      "MUCH TOO EASILY.",
+      "",
+      "INSIDE THE BAG:",
+      "",
+      "A SINGLE BLACK BUTTON.",
+      "",
+      "NOT A BUTTON FROM CLOTHING.",
+      "",
+      "A BUTTON YOU PRESS."
+    ]);
+    return;
+  }
+
+  if(state.room==="belowroom" && ["LOOK ROOT","PULL ROOT","TOUCH ROOT"].includes(input)){
+    message([
+      "THE ROOT IS THINNER HERE.",
+      "",
+      "IT DISAPPEARS INTO",
+      "THE CEILING.",
+      "",
+      "SOMEWHERE ABOVE YOU,",
+      "LEAVES RUSTLE."
+    ]);
+    return;
+  }
+
+  if(["PRESS BUTTON","PUSH BUTTON","USE BUTTON"].includes(input)){
+    if(!has("BLACK BUTTON")){message(["YOU DON'T HAVE A BUTTON."]);return}
+    message([
+      "YOU PRESS THE BUTTON.",
+      "",
+      "        click",
+      "",
+      "NOTHING HAPPENS HERE.",
+      "",
+      "SOMEWHERE VERY FAR AWAY,",
+      "SOMETHING LARGE OPENS."
+    ]);
+    return;
+  }
+
+
+
+  if(input==="LOOK"){message(roomLook(state.room));return}
+
+  const bareLooks={
+    "BOX":"LOOK BOX",
+    "BELL":"LOOK BELL",
+    "STRING":"LOOK STRING",
+    "APPLE":"LOOK APPLE",
+    "MARBLE":"LOOK MARBLE",
+    "HOOK":"LOOK HOOK",
+    "LABEL":"LOOK LABEL",
+    "TREE":"LOOK TREE",
+    "ROOT":"LOOK ROOT",
+    "WELL":"LOOK WELL",
+    "SCRATCHES":"LOOK SCRATCHES",
+    "TAG":"LOOK TAG",
+    "TREE":"LOOK TREE",
+    "RAIN":"LOOK RAIN",
+    "MIRROR":"LOOK MIRROR",
+    "REFLECTION":"LOOK MIRROR",
+    "CHAIR":"LOOK CHAIR",
+    "WALL":"LOOK WALL",
+    "BOARD":"LOOK BOARD",
+    "CUPS":"LOOK BOARD",
+    "BAG":"LOOK BAG",
+    "BUTTON":"LOOK BUTTON"
+  };
+  if(bareLooks[input]){
+    handle(bareLooks[input]);
+    return;
+  }
+
+  if(["INVENTORY","I","CHECK INVENTORY"].includes(input)){
+    message(state.inventory.length
+      ? ["YOU ARE CARRYING:","",...state.inventory.map(x=>"        "+x)]
+      : ["YOU ARE CARRYING NOTHING."]);
+    return;
+  }
+
+  if(input==="HELP"){
+    message([
+      "ARROW KEYS MOVE.",
+      "TYPE SIMPLE COMMANDS.",
+      "",
+      "LOOK · TAKE · DROP · USE",
+      "OPEN · PULL · PUSH · SHOUT",
+      "",
+      "TRY THINGS."
+    ]);
+    return;
+  }
+
+  if(input==="WAMPUS"){message(["THAT IS NOT A QUESTION."]);return}
+  if(input==="WHO AM I" || input==="WHO AM I?"){message(["YOU ARE @."]);return}
+
+  if(["LOOK SCRATCHES","EXAMINE SCRATCHES","LOOK LINES","EXAMINE LINES"].includes(input)){
+    if(state.room!=="corridor"){message(["THERE ARE NO SCRATCHES HERE."]);return}
+    if(has("BRASS TAG")){
+      message([
+        "THREE STRAIGHT LINES.",
+        "",
+        "THEY WERE CUT FROM BOTTOM TO TOP.",
+        "",
+        "YOU HOLD UP THE BRASS TAG.",
+        "",
+        "THE SPACING IS EXACT.",
+        "",
+        "THAT SEEMS UNLIKELY."
+      ]);
+    } else {
+      message([
+        "THREE STRAIGHT LINES.",
+        "",
+        "THEY WERE CUT FROM BOTTOM TO TOP.",
+        "",
+        "YOU ARE NOT SURE WHY THAT BOTHERS YOU."
+      ]);
+    }
+    return;
+  }
+
+  if(["LOOK GLIMMER","LOOK GLITTER","LOOK GLITTERING THING","LOOK BOTTOM"].includes(input)){
+    if(state.room!=="well"){message(["YOU CANNOT SEE IT FROM HERE."]);return}
+    if(state.wellSolved){
+      message(["THE GLIMMER IS GONE."]);
+    } else {
+      message([
+        "SOMETHING METALLIC CATCHES THE LIGHT",
+        "FAR BELOW.",
+        "",
+        "TOO FAR TO REACH.",
+        "",
+        "THE LIGHT MOVES WHEN YOU DO."
+      ]);
+    }
+    return;
+  }
+
+  if(state.room==="well"){
+    if(["LOOK WELL"].includes(input)){
+      if(state.wellBellLowered){
+        message([
+          "THE STRING DISAPPEARS INTO THE DARKNESS.",
+          "",
+          "IT IS PULLED SLIGHTLY TO ONE SIDE."
+        ]);
+      } else {
+        message([
+          "IT IS STILL VERY DEEP.",
+          "",
+          state.wellSolved ? "THE GLIMMER IS GONE." : "SOMETHING STILL GLITTERS AT THE BOTTOM."
+        ]);
+      }
+      return;
+    }
+    if(["CLIMB WELL","CLIMB INTO WELL"].includes(input)){message(["THERE IS NOTHING TO CLIMB."]);return}
+    if(["JUMP","JUMP IN WELL","JUMP INTO WELL"].includes(input)){
+      state.awaiting="jump";
+      message(["ARE YOU SURE? Y/N"]);
+      return;
+    }
+  }
+
+  if(state.room==="hookroom" && ["TOUCH HOOK","WIGGLE HOOK"].includes(input)){
+    if(state.secretOpen){
+      message([
+        "THE HOOK IS ALREADY",
+        "SITTING AT AN ODD ANGLE.",
+        "",
+        "THE PASSAGE EAST IS OPEN."
+      ]);
+    } else {
+      message([
+        "THE HOOK WIGGLES.",
+        "",
+        "NOT MUCH.",
+        "",
+        "MORE THAN A HOOK SHOULD."
+      ]);
+    }
+    return;
+  }
+
+  if(state.room==="hookroom" && ["PULL HOOK","PUSH HOOK","TURN HOOK","MOVE HOOK","USE HOOK"].includes(input)){
+    if(state.secretOpen){
+      message(["THE HOOK MOVES.","","THE PASSAGE IS ALREADY OPEN."]);
+      return;
+    }
+    state.secretOpen=true;
+    message([
+      "THE HOOK MOVES.",
+      "",
+      "        clunk",
+      "",
+      "SOMETHING HEAVY SHIFTS",
+      "INSIDE THE EAST WALL.",
+      "",
+      "A SECTION OF STONE",
+      "SLIDES QUIETLY ASIDE.",
+      "",
+      "A PASSAGE IS NOW OPEN TO THE EAST."
+    ]);
+    return;
+  }
+
+  if(state.room==="hookroom" && ["HIT HOOK","KICK HOOK"].includes(input)){
+    message(["        clang","","SOMETHING CLANGS BACK","FROM INSIDE THE WALL."]);
+    return;
+  }
+
+  if(state.room==="hookroom" && ["SHOUT AT HOOK","YELL AT HOOK"].includes(input)){
+    message(["THE HOOK REMAINS A HOOK.","","YOU FEEL SLIGHTLY FOOLISH."]);
+    return;
+  }
+
+  if(state.room==="hookroom" && ["LICK HOOK","TASTE HOOK"].includes(input)){
+    message(["YOU LICK THE HOOK.","","IT TASTES LIKE IRON.","","THIS HAS NOT HELPED."]);
+    return;
+  }
+
+  if(state.room==="box"){
+    if(input==="OPEN" || input==="OPEN LID"){
+      input="OPEN BOX";
+    }
+    if(input==="CLOSE"){
+      input="CLOSE BOX";
+    }
+    if(input==="CLOSE BOX"){
+      if(!state.boxOpened){message(["IT IS ALREADY CLOSED."]);return}
+      state.boxOpened=false;
+      message(["YOU CLOSE THE BOX.", "", 'THE WORDS "FOR WAMPUS" FACE UPWARD.']);
+      return;
+    }
+    if(input==="OPEN BOX"){
+      if(state.boxOpened){show(boxContentsText());return}
+      state.boxOpened=true;
+      show([
+        "THE BOX CONTAINS:",
+        "",
+        "        A BRASS BELL",
+        "        A PIECE OF STRING",
+        "        HALF AN APPLE"
+      ]);
+      return;
+    }
+
+    if(["LOOK BOX","EXAMINE BOX"].includes(input)){
+      if(state.boxOpened){show(boxContentsText());return}
+      message([
+        "A SMALL WOODEN BOX.",
+        "",
+        "IT IS CLOSED.",
+        "",
+        'THE WORDS "FOR WAMPUS" ARE WRITTEN ON THE LID.'
+      ]);
+      return;
+    }
+
+    if(input==="READ BOX"){
+      message(["FOR WAMPUS.","","THE HANDWRITING IS VERY NEAT."]);
+      return;
+    }
+  }
+
+  const aliases={
+    "BELL":"BRASS BELL",
+    "BRASS BELL":"BRASS BELL",
+    "STRING":"PIECE OF STRING",
+    "PIECE OF STRING":"PIECE OF STRING",
+    "APPLE":"HALF AN APPLE",
+    "HALF AN APPLE":"HALF AN APPLE",
+    "MARBLE":"CLAY MARBLE",
+    "CLAY MARBLE":"CLAY MARBLE",
+    "BELL ON STRING":"BELL ON STRING",
+    "KEY":"BRASS KEY",
+    "BRASS KEY":"BRASS KEY",
+    "TAG":"BRASS TAG",
+    "BRASS TAG":"BRASS TAG",
+    "BAG":"CLOTH BAG",
+    "CLOTH BAG":"CLOTH BAG",
+    "BUTTON":"BLACK BUTTON",
+    "BLACK BUTTON":"BLACK BUTTON"
+  };
+
+  if(input==="TAKE ALL"){
+    let available=[];
+
+    if(state.room==="box" && state.boxOpened){
+      available=[...state.boxContents];
+    }
+
+    for(const item of droppedHere()){
+      if(!available.includes(item)) available.push(item);
+    }
+
+    if(state.room==="creature" && state.creaturePhase==="fledShout" && !available.includes("CLAY MARBLE")){
+      available.push("CLAY MARBLE");
+    }
+
+    if(!available.length){
+      message(["THERE IS NOTHING HERE TO TAKE."]);
+      return;
+    }
+
+    let took=[];
+    for(const item of [...available]){
+      if(state.inventory.length>=3) break;
+      const before=[...state.inventory];
+      takeItem(item);
+      if(state.inventory.length>before.length) took.push(item);
+    }
+
+    const lines=took.length
+      ? ["YOU TAKE:","",...took.map(x=>"        "+x)]
+      : ["YOUR HANDS ARE FULL."];
+
+    if(state.inventory.length>=3 && available.length>took.length){
+      lines.push("","SOMETHING REMAINS.");
+    }
+
+    message(lines);
+    return;
+  }
+
+  if(input.startsWith("TAKE ")){
+    const key=aliases[input.slice(5)];
+    message([key ? takeItem(key) : "THERE IS NOTHING LIKE THAT HERE."]);
+    return;
+  }
+
+  if(["LOOK BELL"].includes(input)){
+    if(!has("BRASS BELL") && !has("BELL ON STRING") && !droppedHere().includes("BRASS BELL") && !droppedHere().includes("BELL ON STRING")){
+      message(["YOU CANNOT SEE A BELL HERE."]); return;
+    }
+    message(["A SMALL BRASS BELL.","","THE METAL IS SLIGHTLY WARM."]); return;
+  }
+
+  if(["LOOK STRING"].includes(input)){
+    if(!has("PIECE OF STRING") && !has("BELL ON STRING") && !droppedHere().includes("PIECE OF STRING")){
+      message(["YOU CANNOT SEE ANY STRING HERE."]); return;
+    }
+    message(["A PIECE OF ORDINARY STRING.","","LONG ENOUGH FOR SOMETHING."]); return;
+  }
+
+  if(["LOOK APPLE","LOOK HALF AN APPLE"].includes(input)){
+    if(!has("HALF AN APPLE") && !droppedHere().includes("HALF AN APPLE")){
+      message(["YOU CANNOT SEE AN APPLE HERE."]); return;
+    }
+    message([
+      "HALF AN APPLE.",
+      "",
+      "THE OTHER HALF IS MISSING.",
+      "",
+      "NOT EATEN.",
+      "MISSING."
+    ]); return;
+  }
+
+  if(["LOOK MARBLE","LOOK CLAY MARBLE"].includes(input)){
+    if(!has("CLAY MARBLE") && !droppedHere().includes("CLAY MARBLE")){
+      message(["YOU CANNOT SEE A MARBLE HERE."]); return;
+    }
+    message([
+      "A SMALL CLAY MARBLE.",
+      "",
+      "IT DOES NOT SEEM ESPECIALLY ROUND.",
+      "",
+      "THIS DOES NOT EXPLAIN",
+      "HOW IT MOVES."
+    ]); return;
+  }
+
+  if(["LOOK TAG","LOOK BRASS TAG","READ TAG"].includes(input)){
+    if(!has("BRASS TAG") && !droppedHere().includes("BRASS TAG")){message(["YOU CANNOT SEE A TAG HERE."]);return}
+    message(["A SMALL BRASS TAG.","","THREE MARKS ARE CUT INTO IT:","","        ///","","THE SPACING IS VERY PRECISE."]);
+    return;
+  }
+
+  if(input==="LOOK HOOK"){
+    if(state.room!=="hookroom"){message(["THERE IS NO HOOK HERE."]);return}
+    message([
+      "A THICK IRON HOOK.",
+      "",
+      "IT IS NOT HOLDING ANYTHING.",
+      "",
+      "IT WIGGLES SLIGHTLY",
+      "WHEN YOU TOUCH IT."
+    ]);
+    return;
+  }
+
+  if(["LOOK LABEL","READ LABEL"].includes(input)){
+    if(state.room!=="hookroom"){message(["THERE IS NO LABEL HERE."]);return}
+    message([
+      "A SMALL METAL LABEL.",
+      "",
+      "IT READS:",
+      "",
+      "        @"
+    ]);
+    return;
+  }
+
+  if(["LOOK SEAM","LOOK TILES","EXAMINE SEAM","EXAMINE TILES"].includes(input)){
+    if(state.room!=="hookroom"){message(["NOTHING HERE MATCHES THAT DESCRIPTION."]);return}
+    if(!state.hookWeighted) message([
+      "WHITE FLOOR TILES.",
+      "",
+      "ONE TILE NEAR THE EAST WALL",
+      "SITS SLIGHTLY LOWER THAN THE OTHERS."
+    ]);
+    else if(!state.secretOpen) message(["A HAIRLINE SEAM RUNS","TOWARD THE EAST WALL.","","IT WAS NOT VISIBLE BEFORE."]);
+    else message(["THE SEAM ENDS AT THE OPEN PASSAGE."]);
+    return;
+  }
+
+  if((input==="RING BELL" || input==="SHAKE BELL") && state.room==="beyond"){
+    if(!has("BRASS BELL") && !has("BELL ON STRING")){message(["YOU DON'T HAVE A BELL."]);return}
+
+    if(!state.treeBellEvent){
+      state.treeBellEvent=true;
+      if(!state.dropped.beyond) state.dropped.beyond=[];
+      if(!state.dropped.beyond.includes("BRASS TAG")) state.dropped.beyond.push("BRASS TAG");
+      message([
+        "THE BELL MAKES NO SOUND.",
+        "",
+        "HIGH ABOVE YOU,",
+        "LEAVES RUSTLE.",
+        "",
+        "SOMETHING FALLS.",
+        "",
+        "        tik",
+        "",
+        "A SMALL BRASS TAG",
+        "LANDS BESIDE THE ROOT.",
+        "",
+        "THREE MARKS ARE CUT INTO IT:",
+        "",
+        "        ///"
+      ]);
+    } else {
+      message([
+        "THE BELL MAKES NO SOUND.",
+        "",
+        "HIGH ABOVE YOU,",
+        "THE LEAVES RUSTLE AGAIN.",
+        "",
+        "NOTHING ELSE FALLS."
+      ]);
+    }
+    return;
+  }
+
+  if(input==="RING BELL" || input==="SHAKE BELL"){
+    if(has("BELL ON STRING")){
+      handle("RING BELL ON STRING");
+      return;
+    }
+    if(!has("BRASS BELL")){message(["YOU DON'T HAVE THAT."]);return}
+
+    if(state.room==="hookroom"){
+      message([
+        "THE BELL MAKES NO SOUND.",
+        "",
+        "THE COAT HOOK TREMBLES ANYWAY."
+      ]);
+      return;
+    }
+
+    if(state.room==="creature" && state.creaturePhase==="initial"){
+      message([
+        "THE BELL MAKES NO SOUND.",
+        "",
+        "THE FURRY THING LOOKS UP ANYWAY."
+      ]);
+      return;
+    }
+
+    message([
+      "THE BELL MAKES NO SOUND.",
+      "",
+      "THIS SEEMS WRONG."
+    ]);
+    return;
+  }
+
+  if(input.startsWith("DROP ")){
+    const key=aliases[input.slice(5)];
+    if(!key || !has(key)){message(["YOU ARE NOT CARRYING THAT."]);return}
+    state.inventory=state.inventory.filter(x=>x!==key);
+    addDropped(key);
+    message(["YOU DROP THE "+key+"."]);
+    return;
+  }
+
+  if(input==="USE BELL"){ handle("RING BELL"); return; }
+  if(input==="USE STRING"){
+    if(!has("PIECE OF STRING")){message(["YOU DON'T HAVE THE STRING."]);return}
+    message(["USE IT WITH WHAT?"]); return;
+  }
+  if(input==="USE APPLE"){
+    if(!has("HALF AN APPLE")){message(["YOU DON'T HAVE THE APPLE."]);return}
+    message(["YOU TURN THE APPLE IN YOUR HAND.","","IT CONTINUES TO BE HALF AN APPLE."]); return;
+  }
+  if(input==="USE MARBLE"){
+    if(!has("CLAY MARBLE")){message(["YOU DON'T HAVE THE MARBLE."]);return}
+    handle("ROLL MARBLE"); return;
+  }
+
+  if(["USE STRING WITH BELL","USE BELL WITH STRING","TIE STRING TO BELL","TIE STRING ON BELL","ATTACH STRING TO BELL","COMBINE STRING BELL","COMBINE BELL STRING"].includes(input)){
+    if(!has("PIECE OF STRING")){message(["YOU DON'T HAVE THE STRING."]);return}
+    if(!has("BRASS BELL")){message(["YOU DON'T HAVE THE BELL."]);return}
+
+    state.inventory=state.inventory.filter(x=>x!=="PIECE OF STRING" && x!=="BRASS BELL");
+    state.inventory.push("BELL ON STRING");
+
+    message([
+      "YOU TIE THE STRING TO THE BELL.",
+      "",
+      "IT NOW HAS A HANDLE.",
+      "",
+      "THIS FEELS LIKE PROGRESS.",
+      "",
+      "YOU ARE NOT SURE TOWARD WHAT."
+    ]);
+    return;
+  }
+
+  if([
+    "USE STRING ON WELL","USE STRING WITH WELL","USE BELL ON WELL","USE BELL WITH WELL",
+    "LOWER BELL","LOWER BELL INTO WELL","LOWER STRING","LOWER STRING INTO WELL",
+    "LOWER BELL ON STRING","LOWER BELL ON STRING INTO WELL"
+  ].includes(input)){
+    if(state.room!=="well"){message(["THERE IS NO WELL HERE."]);return}
+    if(!has("BELL ON STRING")){
+      if(has("PIECE OF STRING") && has("BRASS BELL")) message(["THE STRING MIGHT REACH.","","THE BELL WOULD GIVE IT SOME WEIGHT."]);
+      else if(has("PIECE OF STRING")) message(["YOU LOWER THE STRING.","","IT HANGS AGAINST THE WALL.","","IT NEEDS SOME WEIGHT."]);
+      else message(["YOU DON'T HAVE ANYTHING SUITABLE."]);
+      return;
+    }
+    if(state.wellBellLowered){message(["THE BELL IS ALREADY DOWN THERE."]);return}
+    state.wellBellLowered=true;
+    message(["YOU LOWER THE BELL INTO THE WELL.","","THE STRING UNWINDS.","","AND UNWINDS.","","LONGER THAN IT LOOKED.","","THEN THE BELL TOUCHES SOMETHING.","","        ding","","NOT YOUR BELL."]);
+    return;
+  }
+
+  if(["PULL STRING","PULL BELL","RAISE BELL","RAISE STRING","PULL UP BELL","PULL UP STRING"].includes(input)){
+    if(state.room!=="well"){message(["THERE IS NOTHING HERE TO PULL UP."]);return}
+    if(!state.wellBellLowered){message(["NOTHING IS HANGING IN THE WELL."]);return}
+    state.wellBellLowered=false;
+    message(["YOU PULL THE BELL BACK UP.","","THE BELL IS COLD NOW."]);
+    return;
+  }
+
+  if(["LOOK BELL ON STRING","EXAMINE BELL ON STRING"].includes(input)){
+    if(!has("BELL ON STRING")){message(["YOU DON'T HAVE THAT."]);return}
+    message([
+      "A SMALL BRASS BELL",
+      "TIED TO A PIECE OF STRING.",
+      "",
+      "THE KNOT LOOKS BETTER THAN EXPECTED."
+    ]);
+    return;
+  }
+
+  if(["RING BELL ON STRING","SHAKE BELL ON STRING"].includes(input)){
+    if(!has("BELL ON STRING")){message(["YOU DON'T HAVE THAT."]);return}
+    if(state.room==="hookroom"){
+      message([
+        "THE BELL MAKES NO SOUND.",
+        "",
+        "THE COAT HOOK TREMBLES.",
+        "",
+        "THIS TIME, SO DOES THE LABEL."
+      ]);
+    } else {
+      message([
+        "THE BELL MAKES NO SOUND.",
+        "",
+        "THE STRING TWITCHES IN YOUR HAND."
+      ]);
+    }
+    return;
+  }
+
+  if(["ROLL MARBLE","ROLL CLAY MARBLE"].includes(input)){
+    if(!has("CLAY MARBLE")){message(["YOU DON'T HAVE THAT."]);return}
+
+    if(state.room==="__oldhook" && !state.hookWeighted){
+      message([
+        "YOU ROLL THE MARBLE.",
+        "",
+        "IT CURVES TOWARD",
+        "THE EAST WALL.",
+        "",
+        "THEN STOPS BESIDE",
+        "THE SLIGHTLY LOWER TILE."
+      ]);
+      return;
+    }
+
+    if(state.room==="__oldhook" && state.hookWeighted && !state.secretOpen){
+      state.inventory=state.inventory.filter(x=>x!=="CLAY MARBLE");
+      state.secretOpen=true;
+      message([
+        "YOU ROLL THE MARBLE.",
+        "",
+        "IT CURVES TOWARD",
+        "THE LOWER TILE.",
+        "",
+        "THE MARBLE DROPS",
+        "INTO A NARROW GAP.",
+        "",
+        "        click",
+        "",
+        "A SECTION OF THE EAST WALL",
+        "SLIDES QUIETLY ASIDE."
+      ]);
+      return;
+    }
+
+    if(state.room==="beyond"){
+      message([
+        "YOU ROLL THE MARBLE.",
+        "",
+        "IT CIRCLES THE TREE.",
+        "",
+        "ON THE THIRD LAP",
+        "IT STOPS AGAINST THE WET ROOT.",
+        "",
+        "FOR THE FIRST TIME,",
+        "IT STAYS STILL.",
+        "",
+        "YOU PICK IT UP AGAIN."
+      ]);
+      return;
+    }
+
+    message([
+      "YOU ROLL THE MARBLE.",
+      "",
+      "IT CURVES LEFT.",
+      "",
+      "THERE IS NO SLOPE.",
+      "",
+      "YOU PICK IT UP AGAIN."
+    ]);
+    return;
+  }
+
+  if(["THROW MARBLE","THROW CLAY MARBLE"].includes(input)){
+    if(!has("CLAY MARBLE")){message(["YOU DON'T HAVE THAT."]);return}
+    state.inventory=state.inventory.filter(x=>x!=="CLAY MARBLE");
+    addDropped("CLAY MARBLE");
+    message([
+      "YOU THROW THE MARBLE.",
+      "",
+      "IT HITS THE WALL.",
+      "",
+      "A MOMENT LATER, SOMETHING",
+      "TAPS BACK FROM THE OTHER SIDE.",
+      "",
+      "THE MARBLE ROLLS TO A STOP."
+    ]);
+    return;
+  }
+
+  if(["LOOK WALL","LOOK WALLS","LOOK OTHER SIDE"].includes(input)){
+    if(state.room==="creature" || state.room==="hookroom"){
+      message([
+        "YOU STUDY THE WALL.",
+        "",
+        "STONE ON THIS SIDE.",
+        "",
+        "SOMETHING HOLLOW BEHIND IT."
+      ]);
+    } else {
+      message(["THE WALL IS UNREMARKABLE."]);
+    }
+    return;
+  }
+
+  if(input==="JUMP"){
+    message([
+      "YOU JUMP.",
+      "",
+      "YOU COME BACK DOWN.",
+      "",
+      "VERY LITTLE HAS CHANGED."
+    ]);
+    return;
+  }
+
+  if(["THROW APPLE","THROW HALF AN APPLE"].includes(input)){
+    if(!has("HALF AN APPLE")){message(["YOU DON'T HAVE THAT."]);return}
+    state.inventory=state.inventory.filter(x=>x!=="HALF AN APPLE");
+    addDropped("HALF AN APPLE");
+    message([
+      "YOU THROW THE APPLE.",
+      "",
+      "IT LANDS A SHORT DISTANCE AWAY.",
+      "",
+      "THE APPLE APPEARS",
+      "TO HAVE EXPECTED MORE."
+    ]);
+    return;
+  }
+
+  if(["GIVE APPLE","GIVE APPLE TO CREATURE","OFFER APPLE"].includes(input)){
+    if(!has("HALF AN APPLE")){message(["YOU DON'T HAVE THAT."]);return}
+    if(state.room!=="creature"){
+      message(["YOU HOLD OUT THE APPLE.","","NOTHING HERE ACCEPTS IT."]); return;
+    }
+    message([
+      "YOU HOLD OUT THE APPLE.",
+      "",
+      "THE FURRY THING IS GONE.",
+      "",
+      "THIS MAKES THE GESTURE",
+      "LESS EFFECTIVE."
+    ]);
+    return;
+  }
+
+  if(input==="EAT APPLE"){
+    if(!has("HALF AN APPLE")){message(["YOU DON'T HAVE THAT."]);return}
+    state.inventory=state.inventory.filter(x=>x!=="HALF AN APPLE");
+    message([
+      "YOU EAT THE APPLE.",
+      "",
+      "IT TASTES LIKE SOMETHING",
+      "YOU HAVEN'T EATEN YET.",
+      "",
+      "YOU ARE NOT SURE WHAT THAT MEANS."
+    ]);
+    return;
+  }
+
+  if(input==="SHOUT"){
+    if(state.room==="creature" && state.creaturePhase==="initial"){
+      state.creaturePhase="fledShout";
+      show();
+      return;
+    }
+
+    const replies={
+      start:["THE ROOM SWALLOWS THE SOUND."],
+      corridor:["THE PASSAGE ECHOES.","","ECHOES.","","ECHOES."],
+      well:["SOMETHING SHOUTS BACK.","","IT IS NOT YOU."],
+      box:["THE BOX DOES NOT RESPOND."],
+      stairs:[
+        "YOUR VOICE RUNS DOWN THE PASSAGE.",
+        "",
+        "THE SCRAPING STOPS.",
+        "",
+        "SOMETHING SMALL MOVES AWAY."
+      ],
+      creature:["THE PASSAGE STAYS QUIET."],
+      hookroom:["THE TILES GIVE YOUR VOICE BACK TO YOU.","","ONE WORD LATER."]
+    };
+    message(replies[state.room] || ["YOUR VOICE FADES INTO NOTHING."]);
+    return;
+  }
+
+  if(input==="FUCK CREATURE" || input==="FUCK THE CREATURE"){
+    message([
+      "NO.",
+      "",
+      "ALSO, THE CREATURE IS NOT HERE."
+    ]);
+    return;
+  }
+
+  if(input==="KICK TREE"){
+    if(state.room!=="beyond"){message(["THERE IS NO TREE HERE."]);return}
+    message([
+      "YOU KICK THE TREE.",
+      "",
+      "THE TREE DECLINES TO COMMENT."
+    ]);
+    return;
+  }
+
+  if(input==="TAP WALL"){
+    message([
+      "        tap",
+      "",
+      "THE WALL REMAINS COMMITTED",
+      "TO BEING A WALL."
+    ]);
+    return;
+  }
+
+  if(input==="FUCK TREE"){
+    if(state.room!=="beyond"){message(["THERE IS NO TREE HERE."]);return}
+    message([
+      "THE TREE IS FLATTERED.",
+      "",
+      "THE TREE IS ALSO A TREE."
+    ]);
+    return;
+  }
+
+  if(input==="FUCK MIRROR"){
+    if(state.room!=="mirrorroom"){message(["THERE IS NO MIRROR HERE."]);return}
+    message([
+      "THE THING IN THE MIRROR",
+      "TAKES ONE STEP BACK."
+    ]);
+    return;
+  }
+
+  if(input==="EAT MARBLE"){
+    if(!has("CLAY MARBLE")){message(["YOU DON'T HAVE THE MARBLE."]);return}
+    message([
+      "YOU PUT THE MARBLE",
+      "IN YOUR MOUTH.",
+      "",
+      "THIS IS HOW STORIES",
+      "ABOUT EMERGENCY ROOMS BEGIN.",
+      "",
+      "YOU REMOVE IT."
+    ]);
+    return;
+  }
+
+  if(state.room==="rainroom" && ["RING BELL","SHAKE BELL"].includes(input)){
+    if(!has("BRASS BELL") && !has("BELL ON STRING")){
+      message(["YOU DON'T HAVE A BELL."]);
+      return;
+    }
+    message([
+      "THE BELL MAKES NO SOUND.",
+      "",
+      "EVERY RAINDROP STOPS",
+      "IN MID-AIR.",
+      "",
+      "FOR ONE SECOND.",
+      "",
+      "THEN THEY ALL FALL AT ONCE."
+    ]);
+    return;
+  }
+
+  message(["THE COMPUTER DOES NOT UNDERSTAND."]);
+}
+
+// Arrow keys always move. Command history intentionally omitted.
+cmd.addEventListener("keydown",e=>{
+  if(e.key==="Enter"){
+    e.preventDefault();
+    const value=cmd.value;
+    cmd.value="";
+    handle(value);
+  }
+});
+
+document.addEventListener("keydown",e=>{
+  if(game.classList.contains("hidden")){
+    if(e.key==="Enter") startGame();
+    return;
+  }
+
+  const arrows={
+    ArrowUp:"N",
+    ArrowDown:"S",
+    ArrowLeft:"W",
+    ArrowRight:"E"
+  };
+  if(arrows[e.key]){
+    e.preventDefault();
+    cmd.value="";
+    move(arrows[e.key]);
+  }
+});
+
+game.addEventListener("click",()=>cmd.focus());
+helpBtn.addEventListener("click",(e)=>{
+  e.stopPropagation();
+  handle("HELP");
+});
+</script>
+</body>
+</html>
