@@ -11,6 +11,26 @@ const cmd=document.getElementById("cmd");
 const inventoryEl=document.getElementById("inventory");
 const finishedBarEl=document.getElementById("finishedBar");
 const playAgainBtn=document.getElementById("playAgainBtn");
+const startPromptEl=document.getElementById("startPrompt");
+
+function isTouchPreferred(){
+  return window.matchMedia("(pointer: coarse)").matches
+    || window.matchMedia("(hover: none)").matches
+    || navigator.maxTouchPoints > 0;
+}
+
+function configureStartPrompt(){
+  if(!startPromptEl) return;
+  startPromptEl.textContent=isTouchPreferred()
+    ? "[ TAP TO CONTINUE ]"
+    : "[ PRESS ENTER ]";
+}
+
+function tryStartFromTitle(){
+  if(title && !title.classList.contains("hidden")) startGame();
+}
+
+configureStartPrompt();
 
 function freshState(){
   return {
@@ -482,9 +502,22 @@ cmd.addEventListener("keydown",e=>{
   }
 });
 
+if(startPromptEl){
+  startPromptEl.addEventListener("click",e=>{
+    e.stopPropagation();
+    tryStartFromTitle();
+  });
+  startPromptEl.addEventListener("keydown",e=>{
+    if(e.key==="Enter" || e.key===" "){
+      e.preventDefault();
+      tryStartFromTitle();
+    }
+  });
+}
+
 document.addEventListener("keydown",e=>{
   if(game.classList.contains("hidden")){
-    if(e.key==="Enter") startGame();
+    if(e.key==="Enter") tryStartFromTitle();
     return;
   }
 

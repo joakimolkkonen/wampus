@@ -36,7 +36,7 @@
   .title{display:flex;height:100%;flex-direction:column;align-items:center;justify-content:center;text-align:center}
   h1{margin:0;color:var(--hi);font-size:clamp(2.4rem,8vw,5rem);letter-spacing:.24em}
   .sub{margin-top:22px;color:var(--dim);line-height:1.7}
-  .press{margin-top:58px;color:var(--hi);animation:blink 1s steps(1) infinite}
+  .press{margin-top:58px;color:var(--hi);animation:blink 1s steps(1) infinite;cursor:pointer;-webkit-tap-highlight-color:transparent}
   @keyframes blink{50%{opacity:0}}
   .game{display:grid;grid-template-rows:34% 66%;gap:10px;height:100%;min-height:0}
   .mapwrap{display:grid;place-items:center;border-bottom:1px solid rgba(100,180,110,.2);padding:4px 0 10px;min-height:0;overflow:hidden}
