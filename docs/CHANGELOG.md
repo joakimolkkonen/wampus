@@ -23,3 +23,12 @@ Earlier numbered versions are not present in this repository.
 - **Interactions:** `PRESS BUTTON` works when the button is on the floor after opening the bag (no TAKE required); `LOOK BUTTON` when reachable.
 - **Deaths added:** climb tree (`beyond`); step into mirror (`mirrorroom`); lie down in rain (`rainroom`). Well jump unchanged.
 - **Docs:** `STATE.md`, `CHANGELOG.md`, README controls section.
+
+## Playtest 1 final UX pass
+
+- Removed exit button bar; single global hint + `EXITS:` line only.
+- Arrow **↓** / **↑** use DOWN/UP when S/N absent; invalid moves always feedback.
+- Persistent room description + separate command response; **`LOOK`** refreshes description.
+- Simpler ASCII maps (spatial `?` connections, not letter-labeled).
+- Board marble matcher tolerates **`THE`** / **`CLAY`** variants; **`USE … WITH`** partial prompts.
+- Prototype end: blinking **PLAY AGAIN** + **`RESTART`** (not death).

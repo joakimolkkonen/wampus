@@ -20,7 +20,10 @@ function handle(raw){
   if(typoVerbs[first]){
     input=typoVerbs[first] + input.slice(first.length);
   }
-  if(state.room!=="start" && input!=="HELP") onboardingEl.style.display="none";
+  if(["PLAY AGAIN","RESTART"].includes(input)){
+    restartGame();
+    return;
+  }
 
   if(state.awaiting==="jump"){
     if(["Y","YES"].includes(input)){state.awaiting=null;die();return}
@@ -32,8 +35,7 @@ function handle(raw){
 
   if(state.awaiting==="again"){
     if(["Y","YES","AGAIN"].includes(input)){
-      state=freshState();
-      show();
+      restartGame();
       return;
     }
     if(["N","NO"].includes(input)){
@@ -438,11 +440,10 @@ function handle(raw){
       message(prototypeEndingLines());
       return;
     }
-    state.atPrototypeEnd=true;
     const pressLead=has("BLACK BUTTON")
       ? "YOU PRESS THE BUTTON."
       : "YOU PRESS THE BUTTON WHERE IT LIES.";
-    message([
+    completePrototype([
       pressLead,
       "",
       "        click",
@@ -458,7 +459,7 @@ function handle(raw){
 
 
 
-  if(input==="LOOK"){message(roomLook(state.room));return}
+  if(input==="LOOK"){lookRefresh();return}
 
   const bareLooks={
     "BOX":"LOOK BOX",
@@ -498,10 +499,8 @@ function handle(raw){
 
   if(input==="HELP"){
     message([
-      "ARROW KEYS: ←W · ↑N · →E · ↓S",
-      "WHEN SHOWN: ↑ UP · ↓ DOWN (OR PGUP/PGDOWN)",
-      "",
-      "TYPE SIMPLE COMMANDS.",
+      "ARROW KEYS MOVE.",
+      "EXITS ARE LISTED BENEATH THE ROOM NAME.",
       "",
       "LOOK · TAKE · DROP · USE",
       "OPEN · PULL · PUSH · SHOUT",
@@ -915,9 +914,9 @@ function handle(raw){
   }
 
   if(input==="USE BELL"){ handle("RING BELL"); return; }
-  if(input==="USE STRING"){
+  if(input==="USE STRING" || input==="USE STRING WITH"){
     if(!has("PIECE OF STRING")){message(["YOU DON'T HAVE THE STRING."]);return}
-    message(["USE IT WITH WHAT?"]); return;
+    message(["USE STRING WITH WHAT?"]); return;
   }
   if(input==="USE APPLE"){
     if(!has("HALF AN APPLE")){message(["YOU DON'T HAVE THE APPLE."]);return}
@@ -1271,6 +1270,12 @@ function handle(raw){
       "",
       "THEN THEY ALL FALL AT ONCE."
     ]);
+    return;
+  }
+
+  const useWithMatch=input.match(/^USE\s+(.+?)\s+WITH\s*$/);
+  if(useWithMatch){
+    message(["USE "+useWithMatch[1].trim()+" WITH WHAT?"]);
     return;
   }
 

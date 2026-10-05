@@ -39,47 +39,40 @@
   .press{margin-top:58px;color:var(--hi);animation:blink 1s steps(1) infinite}
   @keyframes blink{50%{opacity:0}}
   .game{display:grid;grid-template-rows:34% 66%;gap:10px;height:100%;min-height:0}
-  .mapwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:1px solid rgba(100,180,110,.2);padding:4px 0 8px;min-height:0;overflow:hidden;gap:6px}
+  .mapwrap{display:grid;place-items:center;border-bottom:1px solid rgba(100,180,110,.2);padding:4px 0 10px;min-height:0;overflow:hidden}
   #map{margin:0;white-space:pre;color:var(--hi);font-size:clamp(11px,1.35vw,16px);line-height:1.00}
-  .exitbar{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
-  .exitbar.hidden{display:none!important}
-  .exitbar-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
-  .exitbar-row.exitbar-vertical{margin-top:2px}
-  .exitbtn{
-    font:inherit;font-size:.72rem;letter-spacing:.04em;color:var(--hi);
-    background:rgba(20,50,24,.85);border:1px solid rgba(100,180,110,.35);
-    border-radius:4px;padding:3px 8px;cursor:pointer;line-height:1.2
-  }
-  .exitbtn:hover{border-color:var(--fg);color:var(--hi)}
-  .exitbtn:focus{outline:1px solid var(--dim);outline-offset:2px}
-  .exitbtn-vertical{color:var(--hi);border-color:rgba(140,220,150,.45)}
   .console{min-height:0;display:flex;flex-direction:column}
-  #onboarding{
-    color:var(--dim);font-size:.78rem;line-height:1.45;margin-bottom:10px;
-    letter-spacing:.02em
-  }
-  #inventory{
-    color:var(--dim);font-size:.78rem;line-height:1.4;margin-bottom:8px;
-    border-bottom:1px solid rgba(100,180,110,.14);padding-bottom:8px
-  }
   #contextline{
-    color:var(--dim);font-size:.76rem;line-height:1.4;margin-bottom:6px;
-    letter-spacing:.03em
+    color:var(--hi);font-size:.78rem;line-height:1.35;margin-bottom:2px;
+    letter-spacing:.06em
   }
-  #log{
-    white-space:pre-wrap;line-height:1.28;flex:1;min-height:0;overflow:hidden;
-    padding-right:4px;padding-bottom:5px;font-size:.88rem
+  #exitline{
+    color:var(--dim);font-size:.72rem;line-height:1.35;margin-bottom:8px;
+    letter-spacing:.04em
   }
-  .historybar{
-    display:flex;justify-content:flex-end;gap:8px;margin:-2px 0 5px;
-    font-size:.68rem;color:var(--dim)
+  #roomdesc{
+    white-space:pre-wrap;line-height:1.26;flex:1;min-height:0;overflow:hidden;
+    padding-right:4px;font-size:.84rem;color:var(--fg);margin-bottom:6px
   }
-  .historybar button{
-    font:inherit;color:var(--dim);background:transparent;border:0;padding:0;
-    cursor:pointer;text-decoration:underline;text-underline-offset:2px
+  #response{
+    white-space:pre-wrap;line-height:1.26;max-height:28%;min-height:2.2em;overflow:hidden;
+    padding-right:4px;font-size:.84rem;color:var(--hi);margin-bottom:6px;
+    border-top:1px solid rgba(100,180,110,.12);padding-top:6px
   }
-  .historybar button:hover{color:var(--fg)}
-  .prompt{margin-top:12px;display:flex;gap:8px;align-items:center;color:var(--hi)}
+  #response:empty{display:none}
+  #inventory{
+    color:var(--dim);font-size:.78rem;line-height:1.4;margin-bottom:6px;
+    border-bottom:1px solid rgba(100,180,110,.14);padding-bottom:6px
+  }
+  #finishedBar{margin-bottom:8px;text-align:center}
+  .playagain{
+    font:inherit;font-size:.82rem;letter-spacing:.12em;color:var(--hi);
+    background:transparent;border:1px solid rgba(100,180,110,.45);
+    border-radius:4px;padding:6px 14px;cursor:pointer;
+    animation:blink 1.2s steps(1) infinite
+  }
+  .playagain:hover{border-color:var(--fg)}
+  .prompt{margin-top:8px;display:flex;gap:8px;align-items:center;color:var(--hi)}
   #cmd{
     flex:1;border:0;outline:0;background:transparent;color:var(--hi);font:inherit;
     caret-color:var(--hi);text-transform:uppercase
@@ -89,6 +82,6 @@
     .terminal{width:99vw;height:98vh;padding:16px 12px}
     .game{grid-template-rows:31% 69%}
     #map{font-size:11px}
-    #log{font-size:.82rem}
+    #roomdesc,#response{font-size:.8rem}
     #cornerHint{font-size:.62rem;right:10px}
   }

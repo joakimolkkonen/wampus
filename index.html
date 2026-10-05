@@ -8,7 +8,7 @@
 </head>
 <body>
 <main class="terminal">
-  <div id="cornerHint">ARROWS: N/E/S/W · ↑↓ WHEN SHOWN · <button id="helpBtn" type="button">HELP</button></div>
+  <div id="cornerHint">ARROWS MOVE · TYPE COMMANDS · <button id="helpBtn" type="button">HELP</button></div>
   <section id="title" class="screen title">
     <h1>WAMPUS<br><span style="font-size:.42em;letter-spacing:.16em">THE WOMBAT</span></h1>
     <div class="sub">A GAME OF EXPLORATION<br>AND POOR DECISIONS</div>
@@ -18,16 +18,16 @@
   <section id="game" class="screen game hidden">
     <div class="mapwrap">
       <pre id="map"></pre>
-      <div id="exitbar" class="exitbar hidden" aria-label="Available exits"></div>
     </div>
     <div class="console">
-      <div id="onboarding">
-        ARROW KEYS MOVE. TYPE SIMPLE COMMANDS.
-        TRY: LOOK, SHOUT, JUMP, HELP
-      </div>
       <div id="contextline"></div>
+      <div id="exitline"></div>
+      <div id="roomdesc"></div>
+      <div id="response"></div>
       <div id="inventory"></div>
-      <div id="log"></div>
+      <div id="finishedBar" class="hidden">
+        <button id="playAgainBtn" type="button" class="playagain">PLAY AGAIN</button>
+      </div>
       <div class="prompt"><span>&gt;</span><input id="cmd" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
     </div>
   </section>

@@ -9,9 +9,17 @@ Snapshot for returning to the project after time away. Reference build: `archive
 
 ## Movement UI
 
-- Arrow keys move **cardinal** exits only (no arrow key = vertical).
-- When **UP** or **DOWN** exits exist, labeled buttons appear under the ASCII map; **Page Up / Page Down** also move vertically.
-- Context line lists exits as `←W  ↑N  →E  ↓S  ↑UP  ↓DOWN` (not raw `U`/`D` letters).
+- Global hint (top-right): `ARROWS MOVE · TYPE COMMANDS · HELP`.
+- Room name + single **`EXITS: NORTH · EAST · …`** line (includes **UP** / **DOWN** when open).
+- Arrow keys: **N/E/S/W** when present; if **N** (or **S**) is absent, **↑** (or **↓**) uses **UP** / **DOWN**.
+- Invalid moves (arrows or typed): **`YOU CAN'T GO THAT WAY.`**
+- No on-screen movement button bar.
+
+## Presentation
+
+- **Persistent room description** (`#roomdesc`) stays visible; command results appear in **`#response`** below it.
+- **`LOOK`** refreshes the full room description (does not replace the layout with response-only text).
+- Prototype completion: blinking **PLAY AGAIN** control + `PLAY AGAIN` / `RESTART` commands (not a death screen).
 
 ## Rooms (implemented)
 
@@ -39,7 +47,7 @@ Snapshot for returning to the project after time away. Reference build: `archive
 - Hook room: pull hook → secret east; label `@`.
 - Beyond: ring bell → brass tag with `///`.
 - Rain / mirror / chair: room-specific LOOK and TRY verbs.
-- Board: marble in cup/hole/board → hatch; use **↓ DOWN** (or button) to belowroom.
+- Board: marble in cup/hole/board → hatch; **↓** (no south exit) descends to belowroom.
 - Below: untie bag → black button on floor; **PRESS BUTTON** works without TAKE → **prototype end** (not a death).
 
 ## Deaths (current)
@@ -55,10 +63,11 @@ All deaths: short message, **PLAY AGAIN? Y/N**.
 
 ## Playtest 1 polish (latest)
 
-- Exit bar + clearer ASCII map labels (N/E/S/W, DOWN, UP).
-- Black button: press in place after opening bag (no forced TAKE).
-- Three additional optional deaths (see table).
-- Prototype ending unchanged after button press.
+- Simplified navigation UI (no exit button bar); arrow ↓/↑ fallback for DOWN/UP.
+- Split room description vs command response panel.
+- Simpler spatial ASCII maps (`?` passages, no compass letters on map).
+- Marble phrasing + incomplete `USE … WITH` hints.
+- Prototype ending + **PLAY AGAIN**.
 
 ## Known issues / limits
 

@@ -8,8 +8,8 @@ A tiny browser adventure inspired loosely by early text adventures and *Hunt the
 
 ## Controls
 
-- **Arrow keys:** move **W / N / E / S** when that exit exists.
-- **↑ UP / ↓ DOWN** buttons appear under the map when vertical exits exist; **Page Up / Page Down** work too.
+- **Arrow keys** move when an exit exists in that direction (if there is no south exit but there is a down exit, **↓** means down).
+- **EXITS:** line under the room name lists available directions.
 - **Type commands** at the prompt (`LOOK`, `TAKE`, `HELP`, etc.).
 
 ## Run locally
