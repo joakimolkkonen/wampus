@@ -32,3 +32,8 @@ Earlier numbered versions are not present in this repository.
 - Simpler ASCII maps (spatial `?` connections, not letter-labeled).
 - Board marble matcher tolerates **`THE`** / **`CLAY`** variants; **`USE … WITH`** partial prompts.
 - Prototype end: blinking **PLAY AGAIN** + **`RESTART`** (not death).
+
+## Pre-share hotfix
+
+- ASCII maps: corridor openings use paired walls (`│ │`) instead of single-line wires.
+- Prototype ending: dedicated full-screen console layout so ending text and **PLAY AGAIN** are not clipped.

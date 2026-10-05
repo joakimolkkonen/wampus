@@ -60,6 +60,30 @@
     border-top:1px solid rgba(100,180,110,.12);padding-top:6px
   }
   #response:empty{display:none}
+  .game.prototype-complete{
+    grid-template-rows:1fr
+  }
+  .game.prototype-complete .mapwrap{display:none}
+  .game.prototype-complete #roomdesc{display:none}
+  .game.prototype-complete #inventory{display:none}
+  .game.prototype-complete #exitline{display:none}
+  .game.prototype-complete .console{
+    justify-content:center;text-align:center;padding-top:8px
+  }
+  .game.prototype-complete #contextline{
+    margin-bottom:12px;color:var(--dim)
+  }
+  .game.prototype-complete #response{
+    flex:0 1 auto;max-height:none;overflow:visible;
+    border-top:0;padding-top:0;margin-bottom:16px;
+    line-height:1.32;font-size:.86rem
+  }
+  .game.prototype-complete #finishedBar{
+    margin-bottom:16px
+  }
+  .game.prototype-complete .prompt{
+    justify-content:center;max-width:420px;margin:0 auto;width:100%
+  }
   #inventory{
     color:var(--dim);font-size:.78rem;line-height:1.4;margin-bottom:6px;
     border-bottom:1px solid rgba(100,180,110,.14);padding-bottom:6px

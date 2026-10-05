@@ -246,10 +246,22 @@ function show(arrivalLines=null){
   cmd.focus();
 }
 
+function setPrototypeCompleteMode(on){
+  if(!game) return;
+  game.classList.toggle("prototype-complete",!!on);
+}
+
 function message(lines){
   renderFrame();
-  if(state.roomDescSource!=="look") setRoomDescription(roomText(state.room));
-  setResponse(lines);
+  if(state.awaiting==="complete" || state.atPrototypeEnd){
+    setRoomDescription("");
+    setPrototypeCompleteMode(true);
+    setResponse(lines);
+    if(finishedBarEl) finishedBarEl.classList.remove("hidden");
+  } else {
+    if(state.roomDescSource!=="look") setRoomDescription(roomText(state.room));
+    setResponse(lines);
+  }
   cmd.focus();
 }
 
@@ -264,7 +276,9 @@ function lookRefresh(){
 function completePrototype(lines){
   state.atPrototypeEnd=true;
   state.awaiting="complete";
+  setPrototypeCompleteMode(true);
   renderFrame();
+  setRoomDescription("");
   setResponse(lines);
   if(finishedBarEl) finishedBarEl.classList.remove("hidden");
   cmd.focus();
@@ -272,6 +286,7 @@ function completePrototype(lines){
 
 function restartGame(){
   state=freshState();
+  setPrototypeCompleteMode(false);
   if(finishedBarEl) finishedBarEl.classList.add("hidden");
   show();
 }
