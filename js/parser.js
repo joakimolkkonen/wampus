@@ -105,20 +105,6 @@ function handle(raw){
     return;
   }
 
-  if(state.room==="rainroom" && ["LIE IN RAIN","LIE DOWN IN RAIN","LIE ON THE RAIN"].includes(input)){
-    die([
-      "YOU LIE DOWN IN THE RAIN.",
-      "",
-      "IT PASSES THROUGH THE STONE.",
-      "",
-      "IT PASSES THROUGH YOU.",
-      "",
-      "AFTER A WHILE,",
-      "YOU STOP PASSING BACK."
-    ].join("\n"));
-    return;
-  }
-
   if(state.room==="rainroom" && ["DRINK RAIN","TASTE RAIN"].includes(input)){
     state.rainDrank=true;
     message([
@@ -203,17 +189,6 @@ function handle(raw){
       "",
       "        ding"
     ]);
-    return;
-  }
-
-  if(state.room==="mirrorroom" && ["ENTER MIRROR","WALK INTO MIRROR","STEP INTO MIRROR","GO INTO MIRROR","STEP THROUGH MIRROR"].includes(input)){
-    die([
-      "YOU STEP INTO THE MIRROR.",
-      "",
-      "THE GLASS DOES NOT BREAK.",
-      "",
-      "YOU DO."
-    ].join("\n"));
     return;
   }
 
@@ -1142,6 +1117,32 @@ function handle(raw){
     return;
   }
 
+  if(["EAT STRING","EAT PIECE OF STRING","TASTE STRING"].includes(input)){
+    if(!has("PIECE OF STRING")){message(["YOU DON'T HAVE THAT."]);return}
+    message([
+      "YOU PUT THE STRING IN YOUR MOUTH.",
+      "",
+      "IT TASTES LIKE FIBRE.",
+      "",
+      "YOU REMOVE IT.",
+      "",
+      "THIS HAS NOT HELPED."
+    ]);
+    return;
+  }
+
+  if(["EAT BELL","TASTE BELL"].includes(input)){
+    if(!has("BRASS BELL") && !has("BELL ON STRING")){message(["YOU DON'T HAVE THAT."]);return}
+    message([
+      "YOU LICK THE BELL.",
+      "",
+      "IT TASTES LIKE BRASS.",
+      "",
+      "THE BELL STILL MAKES NO SOUND."
+    ]);
+    return;
+  }
+
   if(input==="EAT APPLE"){
     if(!has("HALF AN APPLE")){message(["YOU DON'T HAVE THAT."]);return}
     state.inventory=state.inventory.filter(x=>x!=="HALF AN APPLE");
@@ -1192,13 +1193,15 @@ function handle(raw){
   }
 
   if(state.room==="beyond" && ["CLIMB TREE","CLIMB UP TREE","CLIMB THE TREE"].includes(input)){
-    die([
+    message([
       "YOU CLIMB THE TREE.",
       "",
       "THE TRUNK HAS NO END.",
       "",
-      "YOUR ARMS DO."
-    ].join("\n"));
+      "YOU CLIMB BACK DOWN.",
+      "",
+      "THIS ACCOMPLISHES NOTHING."
+    ]);
     return;
   }
 
@@ -1279,5 +1282,5 @@ function handle(raw){
     return;
   }
 
-  message(["THE COMPUTER DOES NOT UNDERSTAND."]);
+  parserFailure(input);
 }

@@ -52,7 +52,9 @@ function freshState(){
     rainDrank:false,
     hatchOpen:false,
     atPrototypeEnd:false,
-    roomDescSource:"enter"
+    roomDescSource:"enter",
+    commandsOk:0,
+    parserFailures:0
   };
 }
 
@@ -244,10 +246,64 @@ function setRoomDescription(lines){
 function setResponse(lines){
   if(lines===null || lines===undefined || lines===""){
     responseEl.textContent="";
+    responseEl.scrollTop=0;
     return;
   }
   const display=Array.isArray(lines)?lines:[String(lines)];
   responseEl.textContent=display.join("\n");
+  responseEl.scrollTop=responseEl.scrollHeight;
+}
+
+function parserFailure(input){
+  state.parserFailures=(state.parserFailures||0)+1;
+  const early=["start","corridor","well","box","stairs","creature"].includes(state.room);
+  const terse=((state.commandsOk||0)>=12) || (!early && (state.commandsOk||0)>=5);
+
+  if(state.room==="well" && /\b(GLITTER|GLIMMER|SPARKLE|SHINY|BOTTOM|DEEP|REACH|GRAB|GET|TAKE|CLIMB|JUMP)\b/.test(input)){
+    message([
+      "THAT DOES NOT COMPUTE.",
+      "",
+      "TRY LOOK GLITTER.",
+      "",
+      "OR LOOK WELL."
+    ], {parserFailure:true});
+    return;
+  }
+
+  if(state.room==="corridor" && /\b(SCRATCH|SCRATCHES|LINE|LINES|MARK|CARVE)\b/.test(input) && !input.startsWith("LOOK")){
+    message([
+      "THAT DOES NOT COMPUTE.",
+      "",
+      "TRY LOOK SCRATCHES."
+    ], {parserFailure:true});
+    return;
+  }
+
+  if(state.room==="box" && /\b(BOX|WAMPUS|LID)\b/.test(input) && !/^(OPEN|LOOK|READ)/.test(input)){
+    message([
+      "THAT DOES NOT COMPUTE.",
+      "",
+      "TRY OPEN BOX.",
+      "",
+      "OR LOOK BOX."
+    ], {parserFailure:true});
+    return;
+  }
+
+  if(!terse && state.parserFailures<=4 && early){
+    message([
+      "THAT DOES NOT COMPUTE.",
+      "",
+      "TRY A SIMPLE VERB + THING.",
+      "",
+      "LOOK",
+      "OPEN BOX",
+      "TAKE APPLE"
+    ], {parserFailure:true});
+    return;
+  }
+
+  message(["THE COMPUTER DOES NOT UNDERSTAND."], {parserFailure:true});
 }
 
 function renderFrame(){
@@ -263,6 +319,7 @@ function show(arrivalLines=null){
   setRoomDescription(roomText(state.room));
   setResponse(arrivalLines);
   if(finishedBarEl) finishedBarEl.classList.add("hidden");
+  state.commandsOk=(state.commandsOk||0)+1;
   cmd.focus();
 }
 
@@ -271,7 +328,7 @@ function setPrototypeCompleteMode(on){
   game.classList.toggle("prototype-complete",!!on);
 }
 
-function message(lines){
+function message(lines, opts={}){
   renderFrame();
   if(state.awaiting==="complete" || state.atPrototypeEnd){
     setRoomDescription("");
@@ -282,6 +339,7 @@ function message(lines){
     if(state.roomDescSource!=="look") setRoomDescription(roomText(state.room));
     setResponse(lines);
   }
+  if(!opts.parserFailure) state.commandsOk=(state.commandsOk||0)+1;
   cmd.focus();
 }
 
@@ -290,6 +348,7 @@ function lookRefresh(){
   renderFrame();
   setRoomDescription(roomLook(state.room));
   setResponse("");
+  state.commandsOk=(state.commandsOk||0)+1;
   cmd.focus();
 }
 

@@ -2,24 +2,36 @@
 
 Snapshot for returning to the project after time away. Reference build: `archive/wampus_the_wombat_v0_17.html`.
 
+## First external blind playtest
+
+**Completed** (developer friend). Full notes: `docs/PLAYTEST_NOTES.md`.
+
+**Headline finding:** *The world can be confusing; the game should not be confusing.*
+
+**Addressed this pass:** parser teaching in opening rooms, response-area scrolling, bespoke eat-string-style replies, removed non-well deaths, docs updated.
+
+**Still open:** ASCII map visual-design pass, intra-room movement (idea only), mobile layout/input (desktop-first).
+
 ## Architecture
 
 - Vanilla HTML/CSS/JS: `index.html`, `css/style.css`, `js/rooms.js`, `js/game.js`, `js/parser.js`.
-- Active game = v0.17 content plus Playtest 1 fixes and polish (see `CHANGELOG.md`).
 
 ## Movement UI
 
-- Global hint (top-right): `ARROWS MOVE · TYPE COMMANDS · HELP`.
-- Room name + single **`EXITS: NORTH · EAST · …`** line (includes **UP** / **DOWN** when open).
-- Arrow keys: **N/E/S/W** when present; if **N** (or **S**) is absent, **↑** (or **↓**) uses **UP** / **DOWN**.
-- Invalid moves (arrows or typed): **`YOU CAN'T GO THAT WAY.`**
-- No on-screen movement button bar.
+- Global hint: `ARROWS MOVE · SEE SOMETHING · TRY SOMETHING · HELP`.
+- Room name + **`EXITS: NORTH · EAST · …`** line.
+- Arrow ↓/↑ use DOWN/UP when S/N absent.
+- Invalid moves: **`YOU CAN'T GO THAT WAY.`**
 
 ## Presentation
 
-- **Persistent room description** (`#roomdesc`) stays visible; command results appear in **`#response`** below it.
-- **`LOOK`** refreshes the full room description (does not replace the layout with response-only text).
-- Prototype completion: blinking **PLAY AGAIN** control + `PLAY AGAIN` / `RESTART` commands (not a death screen).
+- **Persistent room description** (`#roomdesc`); **current response** (`#response`) scrolls internally when long (no full-page scroll, no transcript log).
+- Prototype completion: full-screen ending layout + **PLAY AGAIN**.
+- Title: **Enter** (desktop) or **tap** prompt (touch).
+
+## Platform
+
+**Desktop/laptop-first.** Mobile can start the game; play is not designed for phones yet.
 
 ## Rooms (implemented)
 
@@ -39,53 +51,28 @@ Snapshot for returning to the project after time away. Reference build: `archive
 | `boardroom` | Board room | Cups + hole; marble opens hatch down |
 | `belowroom` | Under the board | Bag, root, black button |
 
-## Important interactions (non-exhaustive)
-
-- Box: open, take bell / string / half apple.
-- Well: bell on string, lower/raise, jump Y/N death.
-- Creature: approach timing, shout, take marble when safe.
-- Hook room: pull hook → secret east; label `@`.
-- Beyond: ring bell → brass tag with `///`.
-- Rain / mirror / chair: room-specific LOOK and TRY verbs.
-- Board: marble in cup/hole/board → hatch; **↓** (no south exit) descends to belowroom.
-- Below: untie bag → black button on floor; **PRESS BUTTON** works without TAKE → **prototype end** (not a death).
-
 ## Deaths (current)
 
 | Trigger | Room | Notes |
 |---------|------|--------|
-| Jump in well (confirm Y) | `well` | Original death |
-| `CLIMB TREE` | `beyond` | Deliberate; endless trunk |
-| `ENTER MIRROR` / step-into variants | `mirrorroom` | Deliberate |
-| `LIE IN RAIN` / `LIE DOWN IN RAIN` | `rainroom` | Deliberate |
+| Jump in well (confirm Y) | `well` | Only death in current build |
 
-All deaths: short message, **PLAY AGAIN? Y/N**.
+## Parser / onboarding (post–playtest #1)
 
-## Playtest 1 polish (latest)
-
-- Simplified navigation UI (no exit button bar); arrow ↓/↑ fallback for DOWN/UP.
-- Split room description vs command response panel.
-- Simpler spatial ASCII maps (`?` passages, no compass letters on map).
-- Marble phrasing + incomplete `USE … WITH` hints.
-- Prototype ending + **PLAY AGAIN**.
-
-## Known issues / limits
-
-- Content after the button press is **not implemented** (teased only: “something large opens”).
-- `wellSolved` appears in well LOOK paths but is not set elsewhere (legacy / unused flag).
-- Hook room marble roll logic references `__oldhook` (unused room id) — hook puzzle uses pull hook only.
+- Early failures: **`THAT DOES NOT COMPUTE.`** + verb hints; context nudges at well/box/corridor.
+- After enough successful commands: terse **`THE COMPUTER DOES NOT UNDERSTAND.`** returns.
+- Start room line: *TYPE SIMPLE VERBS AT THINGS YOU NOTICE.*
 
 ## Development boundary
 
-**End of playable content:** press the black button (in hand or in the bag), then read the prototype ending text. Successful completion of the current build — not a death.
+**End of playable content:** press the black button → prototype ending text (not death).
 
 ## Immediate next milestone (deferred)
 
-- Post–Playtest 1 feedback: bug/confusion fixes only unless explicitly scoped.
-- First content beat after the button — **not started**.
+- Incorporate further playtest feedback without expanding the map.
+- Deliberate pass on ASCII map art quality.
+- Decide whether intra-room movement is in scope (see PLAYTEST_NOTES).
 
 ## Deliberately deferred
 
-- New rooms, puzzles, lore reveals, sound, frameworks, backend, saves, analytics.
-- Resolving Wampus / creature / `@` mysteries.
-- Scrolling log or message history UI.
+- New rooms/story, mobile redesign, intra-room arrow movement, death quota, resolving Wampus mysteries.

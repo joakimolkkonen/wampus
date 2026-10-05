@@ -9,6 +9,8 @@ Durable creative rules for this project. This document records **established des
 - Core loop: **see something → try something → world responds → learn something → explore further.**
 - Exploration over hard puzzles. The world can be strange; the **game** should stay understandable.
 
+**Design principle (playtest #1):** *The world can be confusing. The game should not be confusing.* Mystery lives in the fiction; the parser and UI should invite experimentation, not fight it.
+
 ## Tone
 
 - Mysterious, sparse, eerie, curious.
@@ -34,14 +36,35 @@ Durable creative rules for this project. This document records **established des
 ## Time and death
 
 - No hunger, clock, day/night, NPC schedules, or countdown.
-- Death is uncommon, predictable, and can be funny. The well is sufficient for the current prototype.
+- Death is **uncommon**, **predictable**, and may be dryly funny when the player **clearly chooses** something dangerous (the well jump).
+- No “death quota.” Remove or avoid deaths that punish curiosity without fair warning. Future deaths should emerge from obviously reckless experiments the player understands.
 
-## Interaction philosophy
+## Interaction philosophy — a game about verbs
+
+Internally, treat Wampus as **a game about verbs**: simple commands aimed at things the description mentions.
+
+Target player realization: *I see something in the text → I type a simple verb at it → I try things.*
+
+Examples: `LOOK`, `LOOK WALL`, `LOOK SCRATCHES`, `OPEN BOX`, `TAKE APPLE`, `DROP APPLE`, `EAT APPLE`, `RING BELL`, `USE STRING WITH BELL`, `PULL HOOK`, `SHOUT`.
+
+Opening rooms should **teach this through play**, not a heavy tutorial overlay.
 
 - If the game mentions a thing, reasonable phrasings should work (`OPEN LID`, `LOOK BRASS TAG`, `PUT MARBLE IN CUP`, etc.).
+- **Experimentation** deserves acknowledgement — bespoke dry replies beat generic parser failure when the intent is obvious (e.g. eating non-food objects).
+- Parser personality may use retro **`COMPUTER DOES NOT UNDERSTAND.`**, but early failures should gently teach the verb grammar; do not spam unhelpful failures in the opening sequence.
 - `LOOK` alone must reliably redisplay useful context for the current room and state.
-- Arrow keys are the primary movement affordance; N/S/E/W may exist as commands but should not compete visually with arrows.
+- Arrow keys move **between rooms** (not inside rooms — see product ideas in `PLAYTEST_NOTES.md`).
 - Inventory limit: **three objects** (current prototype).
+
+## Identity ambiguity (seed, do not answer)
+
+Relatively early, the fiction should allow the player to wonder:
+
+- Whether **Wampus** is something they are seeking (`FOR WAMPUS`, title, rumours).
+- Whether the **furry creature** is Wampus (do not confirm or deny).
+- Whether the player **`@`** might be Wampus (label `@`, mirror, symbol — do not confirm or deny).
+
+Do **not** use explicit quiz text (e.g. “ARE YOU WAMPUS?”). Let `@`, the creature, and the word *Wampus* stay three separate questions.
 
 ## UI
 

@@ -37,3 +37,12 @@ Earlier numbered versions are not present in this repository.
 
 - ASCII maps: corridor openings use paired walls (`│ │`) instead of single-line wires.
 - Prototype ending: dedicated full-screen console layout so ending text and **PLAY AGAIN** are not clipped.
+
+## First external playtest — onboarding & fixes
+
+- Parser: early **`THAT DOES NOT COMPUTE.`** teaching hints; well/glitter/box/corridor nudges; **`commandsOk`** tapers to terse failures.
+- Start hint line + corner **SEE SOMETHING · TRY SOMETHING**.
+- **`EAT STRING`** / taste string; **`EAT BELL`** / taste bell (acknowledgement only).
+- **`#response`**: internal scroll when content exceeds area; auto-scroll to latest line.
+- **Removed deaths:** climb tree, enter mirror, lie in rain. **Kept:** well jump.
+- Docs: `PLAYTEST_NOTES.md`, WORLD_BIBLE/STATE updates.

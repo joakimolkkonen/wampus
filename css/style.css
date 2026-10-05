@@ -55,7 +55,8 @@
     padding-right:4px;font-size:.84rem;color:var(--fg);margin-bottom:6px
   }
   #response{
-    white-space:pre-wrap;line-height:1.26;max-height:28%;min-height:2.2em;overflow:hidden;
+    white-space:pre-wrap;line-height:1.26;max-height:28%;min-height:2.2em;
+    overflow-x:hidden;overflow-y:auto;
     padding-right:4px;font-size:.84rem;color:var(--hi);margin-bottom:6px;
     border-top:1px solid rgba(100,180,110,.12);padding-top:6px
   }

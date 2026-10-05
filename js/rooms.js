@@ -15,7 +15,9 @@ const ROOMS = {
       "",
       "YOU DON'T REMEMBER COMING HERE.",
       "",
-      "THERE IS A PASSAGE TO THE SOUTH."
+      "THERE IS A PASSAGE TO THE SOUTH.",
+      "",
+      "TYPE SIMPLE VERBS AT THINGS YOU NOTICE."
     ]
   },
 
